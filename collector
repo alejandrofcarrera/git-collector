@@ -19,27 +19,13 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import os
 import settings as config
-from setuptools import setup, find_packages
+import logging
 
 __author__ = 'Alejandro F. Carrera'
 
+# MAIN
 
-def read(name):
-    return open(os.path.join(os.path.dirname(__file__), name)).read()
-
-setup(
-    name=config.NAME,
-    version=config.VERSION,
-    author="Alejandro F. Carrera",
-    author_email="alejandro.fernandez.carrera@centeropenmiddleware.com",
-    description="A project for Gitlab Collector Service",
-    license="Apache 2",
-    keywords="inner-source collector gl-enhancer",
-    url="https://github.com/SmartDeveloperHub/gitlab-collector",
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['pyapi-gitlab', 'redis', 'flask', 'flask_negotiate', 'GitPython', 'python-dateutil'],
-    classifiers=[],
-    scripts=['collector']
-)
+if __name__ == '__main__':
+    logging.info(" * %s (%s) Started" % (config.LONGNAME, config.VERSION))
+    logging.info(" * %s (%s) Finished", (config.LONGNAME, config.VERSION))
