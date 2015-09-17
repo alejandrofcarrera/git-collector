@@ -50,7 +50,9 @@ GITLAB_VER_SSL = bool(os.environ.get("COLL_GITLAB_VERIFY_SSL", False))
 REDIS_IP = os.environ.get("COLL_REDIS_IP", "127.0.0.1")
 REDIS_PORT = int(os.environ.get("COLL_REDIS_PORT", 6379))
 REDIS_PASS = os.environ.get("COLL_REDIS_PASS", None)
-REDIS_DB = int(os.environ.get("COLL_REDIS_DB", 0))
+REDIS_DB_META = int(os.environ.get("COLL_REDIS_DB_META", 0))
+REDIS_DB_BR = int(os.environ.get("COLL_REDIS_DB_BRANCHES", 1))
+REDIS_DB_CO = int(os.environ.get("COLL_REDIS_DB_COMMITS", 2))
 
 
 def print_message(msg):
