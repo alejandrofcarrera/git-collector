@@ -20,6 +20,7 @@
 """
 
 import os
+import logging
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -50,3 +51,17 @@ REDIS_IP = os.environ.get("COLL_REDIS_IP", "127.0.0.1")
 REDIS_PORT = int(os.environ.get("COLL_REDIS_PORT", 6379))
 REDIS_PASS = os.environ.get("COLL_REDIS_PASS", None)
 REDIS_DB = int(os.environ.get("COLL_REDIS_DB", 0))
+
+
+def print_message(msg):
+    if DEBUGGER:
+        logging.debug("[DEBUG] %s" % msg)
+    else:
+        logging.info("[INFO] %s" % msg)
+
+
+def print_error(msg):
+    if DEBUGGER:
+        logging.warn("[ERROR] %s" % msg)
+    else:
+        logging.info("[ERROR] %s" % msg)
