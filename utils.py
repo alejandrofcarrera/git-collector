@@ -20,6 +20,7 @@
 """
 
 import settings as config
+import parser
 import gitlab
 import redis
 
@@ -84,26 +85,49 @@ class Collector(object):
     # Help Functions
 
     def get_projects_from_redis(self):
-        return map(lambda w: int(w.split(':')[1]), self.rd_instance_meta.keys("projects:*:"))
+        __projects = self.rd_instance_meta.keys("projects:*:")
+        __projects_id = map(lambda x: int(x.split(":")[1]), __projects)
+        __projects = map(lambda x: self.rd_instance_meta.hgetall(x), __projects)
+        return dict(zip(__projects_id, __projects))
 
     def get_projects_from_gitlab(self):
-        pag = 0
-        number_page = 50
-        ret_projects = []
-        ret_projects_len = -1
-        while ret_projects_len is not 0:
-            git_projects = self.gl_instance.getprojectsall(page=pag, per_page=number_page)
-            ret_projects_len = len(git_projects)
-            ret_projects += git_projects
-            pag += 1
-        return ret_projects
+        __pag = 1
+        __number_page = 50
+        __ret_projects = []
+        __ret_projects_len = -1
+        while __ret_projects_len is not 0:
+            __git_projects = self.gl_instance.getprojectsall(page=__pag, per_page=__number_page)
+            __ret_projects_len = len(__git_projects)
+            __ret_projects += __git_projects
+            __pag += 1
+        return __ret_projects
+
+    def add_project_to_redis(self, pr_id, pr_info):
+        if pr_info.get("owner") is None:
+            pr_info["owner"] = "groups:" + str(pr_info.get("namespace").get("id"))
+        else:
+            pr_info["owner"] = "users:" + str(pr_info.get("owner").get("id"))
+        pr_info['tags'] = map(
+            lambda x: x.get("name").encode("ascii", "ignore"),
+            self.gl_instance.getrepositorytags(pr_id)
+        )
+        parser.clean_info_project(pr_info)
+        self.rd_instance_meta.hmset("projects:" + str(pr_id) + ":", pr_info)
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message(" * Added to Redis - Project %d" % int(pr_id))
 
     def update_projects(self):
 
-        # Get Projects Metadata (Gitlab and Redis Cache)
+        # Get Projects Metadata (Gitlab)
         __pr_gl = self.get_projects_from_gitlab()
-        __pr_rd_id = self.get_projects_from_redis()
         __pr_gl_id = map(lambda x: int(x.get('id')), __pr_gl)
+        __pr_gl = dict(zip(__pr_gl_id, __pr_gl))
+
+        # Get Projects Metadata (Redis Cache)
+        __pr_rd = self.get_projects_from_redis()
+        __pr_rd_id = __pr_rd.keys()
 
         # Generate difference and intersection projects
         __pr_new = list(set(__pr_gl_id).difference(set(__pr_rd_id)))
@@ -116,7 +140,9 @@ class Collector(object):
             config.print_message(" * Detected %d deleted projects" % len(__pr_del))
             config.print_message(" * Detected %d projects with possible updates" % len(__pr_mod))
 
-        # Insert Projects
+        # Insert New Project Metadata
+        for i in __pr_new:
+            self.add_project_to_redis(i, __pr_gl[i])
 
         # Delete Projects
 
