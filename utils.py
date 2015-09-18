@@ -68,7 +68,8 @@ class Collector(object):
         __host = "%s://%s:%d" % (config.GITLAB_PROT, config.GITLAB_IP, config.GITLAB_PORT)
         __gl = gitlab.Gitlab(host=__host, verify_ssl=config.GITLAB_VER_SSL)
         try:
-            self.gl_instance = __gl.login(user=config.GITLAB_USER, password=config.GITLAB_PASS)
+            __gl.login(user=config.GITLAB_USER, password=config.GITLAB_PASS)
+            self.gl_instance = __gl
         except Exception as e:
             raise EnvironmentError("Configuration is not valid or Gitlab is not online")
 
@@ -83,17 +84,26 @@ class Collector(object):
     # Help Functions
 
     def get_projects_from_redis(self):
-        return lambda w: int(w.split(':')[1]), self.rd_instance_meta.keys("projects:*:")
+        return map(lambda w: int(w.split(':')[1]), self.rd_instance_meta.keys("projects:*:"))
 
     def get_projects_from_gitlab(self):
-        return self.gl_instance.git.getprojectsall()
+        pag = 0
+        number_page = 50
+        ret_projects = []
+        ret_projects_len = -1
+        while ret_projects_len is not 0:
+            git_projects = self.gl_instance.getprojectsall(page=pag, per_page=number_page)
+            ret_projects_len = len(git_projects)
+            ret_projects += git_projects
+            pag += 1
+        return ret_projects
 
-    def set_projects_to_redis(self):
+    def update_projects(self):
 
         # Get Projects Metadata (Gitlab and Redis Cache)
         __pr_gl = self.get_projects_from_gitlab()
         __pr_rd_id = self.get_projects_from_redis()
-        __pr_gl_id = (lambda w: w.get('id'), __pr_gl)
+        __pr_gl_id = map(lambda x: int(x.get('id')), __pr_gl)
 
         # Generate difference and intersection projects
         __pr_new = list(set(__pr_gl_id).difference(set(__pr_rd_id)))

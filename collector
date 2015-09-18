@@ -33,6 +33,7 @@ if __name__ == '__main__':
     # Create Object Collector
     try:
         __collector = utils.Collector()
+        __collector.update_projects()
     except EnvironmentError as e:
         config.print_error(e.message)
 
