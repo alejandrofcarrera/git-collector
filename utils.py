@@ -54,7 +54,8 @@ class Collector(object):
 
     def __init__(self):
         self.gl_instance = None
-        self.rd_instance_meta = None
+        self.rd_instance_pr = None
+        self.rd_instance_us = None
         self.rd_instance_br = None
         self.rd_instance_co = None
         try:
@@ -76,7 +77,8 @@ class Collector(object):
 
     def rd_connect(self):
         try:
-            self.rd_instance_meta = redis_create_pool(config.REDIS_DB_META)
+            self.rd_instance_pr = redis_create_pool(config.REDIS_DB_PR)
+            self.rd_instance_us = redis_create_pool(config.REDIS_DB_US)
             self.rd_instance_br = redis_create_pool(config.REDIS_DB_BR)
             self.rd_instance_co = redis_create_pool(config.REDIS_DB_CO)
         except EnvironmentError as e:
@@ -85,9 +87,9 @@ class Collector(object):
     # Help Functions
 
     def get_projects_from_redis(self):
-        __projects = self.rd_instance_meta.keys("projects:*:")
+        __projects = self.rd_instance_pr.keys("projects:*:")
         __projects_id = map(lambda x: int(x.split(":")[1]), __projects)
-        __projects = map(lambda x: self.rd_instance_meta.hgetall(x), __projects)
+        __projects = map(lambda x: self.rd_instance_pr.hgetall(x), __projects)
         return dict(zip(__projects_id, __projects))
 
     def get_projects_from_gitlab(self):
@@ -113,7 +115,7 @@ class Collector(object):
             self.gl_instance.getrepositorytags(pr_id)
         )
         parser.clean_info_project(pr_info)
-        self.rd_instance_meta.hmset("projects:" + str(pr_id) + ":", pr_info)
+        self.rd_instance_pr.hmset("projects:" + str(pr_id) + ":", pr_info)
 
         # Print alert
         if config.DEBUGGER:
