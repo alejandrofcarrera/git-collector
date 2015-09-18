@@ -20,6 +20,7 @@
 """
 
 from dateutil import parser
+import base64
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -44,6 +45,23 @@ def clean_info_project(o):
             del o[k]
         elif k in str_time_keys:
             o[k] = long(parser.parse(o.get(k)).strftime("%s")) * 1000
+        elif o[k] is False:
+            o[k] = 'false'
+        elif o[k] is True:
+            o[k] = 'true'
+        else:
+            pass
+
+
+def clean_info_branch(o):
+    k_branches = [
+        "name", "protected"
+    ]
+    for k in o.keys():
+        if k not in k_branches:
+            del o[k]
+        elif k == "name":
+            o["id"] = base64.b16encode(o.get(k))
         elif o[k] is False:
             o[k] = 'false'
         elif o[k] is True:

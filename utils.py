@@ -121,6 +121,16 @@ class Collector(object):
         if config.DEBUGGER:
             config.print_message(" * Added to Redis - Project %d" % int(pr_id))
 
+    def add_branches_to_redis(self, pr_id):
+        __branches = self.gl_instance.getbranches(pr_id)
+        for i in __branches:
+            parser.clean_info_branch(i)
+            self.rd_instance_br.hmset("projects:" + str(pr_id) + ":branches:" + i.get("id"), i)
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message(" * Added to Redis - %d Branches (%d)" % (len(__branches), int(pr_id)))
+
     def update_projects(self):
 
         # Get Projects Metadata (Gitlab)
@@ -145,6 +155,7 @@ class Collector(object):
         # Insert New Project Metadata
         for i in __pr_new:
             self.add_project_to_redis(i, __pr_gl[i])
+            self.add_branches_to_redis(i)
 
         # Delete Projects
 
