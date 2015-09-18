@@ -93,14 +93,15 @@ class Collector(object):
     def get_projects_from_gitlab(self):
         __pag = 1
         __number_page = 50
-        __ret_projects = []
+        __projects = []
         __ret_projects_len = -1
         while __ret_projects_len is not 0:
             __git_projects = self.gl_instance.getprojectsall(page=__pag, per_page=__number_page)
             __ret_projects_len = len(__git_projects)
-            __ret_projects += __git_projects
+            __projects += __git_projects
             __pag += 1
-        return __ret_projects
+        __projects_id = map(lambda x: int(x.get('id')), __projects)
+        return dict(zip(__projects_id, __projects))
 
     def add_project_to_redis(self, pr_id, pr_info):
         if pr_info.get("owner") is None:
@@ -122,8 +123,7 @@ class Collector(object):
 
         # Get Projects Metadata (Gitlab)
         __pr_gl = self.get_projects_from_gitlab()
-        __pr_gl_id = map(lambda x: int(x.get('id')), __pr_gl)
-        __pr_gl = dict(zip(__pr_gl_id, __pr_gl))
+        __pr_gl_id = __pr_gl.keys()
 
         # Get Projects Metadata (Redis Cache)
         __pr_rd = self.get_projects_from_redis()
