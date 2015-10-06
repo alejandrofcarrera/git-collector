@@ -21,8 +21,9 @@
 
 import settings as config
 import parser
-import gitlab
 import redis
+
+from glapi import GlAPI
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -68,9 +69,9 @@ class Collector(object):
 
     def gl_connect(self):
         __host = "%s://%s:%d" % (config.GITLAB_PROT, config.GITLAB_IP, config.GITLAB_PORT)
-        __gl = gitlab.Gitlab(host=__host, verify_ssl=config.GITLAB_VER_SSL)
+        __gl = GlAPI(__host, ssl=config.GITLAB_VER_SSL)
         try:
-            __gl.login(user=config.GITLAB_USER, password=config.GITLAB_PASS)
+            __gl.login(login=config.GITLAB_USER, password=config.GITLAB_PASS)
             self.gl_instance = __gl
         except Exception as e:
             raise EnvironmentError("Configuration is not valid or Gitlab is not online")
@@ -84,7 +85,7 @@ class Collector(object):
         except EnvironmentError as e:
             raise e
 
-    # Help Functions
+    # Get Functions
 
     def get_projects_from_redis(self):
         __projects = self.rd_instance_pr.keys("projects:*:")
@@ -93,17 +94,11 @@ class Collector(object):
         return dict(zip(__projects_id, __projects))
 
     def get_projects_from_gitlab(self):
-        __pag = 1
-        __number_page = 50
-        __projects = []
-        __ret_projects_len = -1
-        while __ret_projects_len is not 0:
-            __git_projects = self.gl_instance.getprojectsall(page=__pag, per_page=__number_page)
-            __ret_projects_len = len(__git_projects)
-            __projects += __git_projects
-            __pag += 1
+        __projects = self.gl_instance.get_projects()
         __projects_id = map(lambda x: int(x.get('id')), __projects)
         return dict(zip(__projects_id, __projects))
+
+    # Add Functions
 
     def add_project_to_redis(self, pr_id, pr_info):
         if pr_info.get("owner") is None:
@@ -112,7 +107,7 @@ class Collector(object):
             pr_info["owner"] = "users:" + str(pr_info.get("owner").get("id"))
         pr_info['tags'] = map(
             lambda x: x.get("name").encode("ascii", "ignore"),
-            self.gl_instance.getrepositorytags(pr_id)
+            self.gl_instance.get_projects_repository_tags_byId(id=pr_id)
         )
         parser.clean_info_project(pr_info)
         self.rd_instance_pr.hmset("projects:" + str(pr_id) + ":", pr_info)
@@ -122,7 +117,7 @@ class Collector(object):
             config.print_message(" * Added to Redis - Project %d" % int(pr_id))
 
     def add_branches_to_redis(self, pr_id):
-        __branches = self.gl_instance.getbranches(pr_id)
+        __branches = self.gl_instance.get_projects_repository_branches_byId(id=pr_id)
         for i in __branches:
             parser.clean_info_branch(i)
             self.rd_instance_br.hmset("projects:" + str(pr_id) + ":branches:" + i.get("id"), i)
