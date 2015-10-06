@@ -31,6 +31,47 @@ str_time_keys = [
 ]
 
 
+def clean_info_commit(o):
+    for k in o.keys():
+        if o[k] is None or o[k] == '' or o[k] == "null":
+            del o[k]
+        elif k in str_time_keys:
+            o[k] = long(parser.parse(o.get(k)).strftime("%s")) * 1000
+        else:
+            pass
+
+
+def clean_info_user(o):
+    k_users = [
+        "username", "name", "twitter", "created_at",
+        "linkedin", "email", "state", "avatar_url",
+        "skype", "id", "website_url", "first_commit_at",
+        "emails", "last_commit_at"
+    ]
+    for k in o.keys():
+        if k not in k_users:
+            del o[k]
+        elif o[k] is None or o[k] == '' or o[k] == "null":
+            del o[k]
+        elif k in str_time_keys:
+            o[k] = long(parser.parse(o.get(k)).strftime("%s")) * 1000
+        else:
+            pass
+
+
+def clean_info_group(o):
+    k_groups = [
+        "name", "path", "description", "avatar_url", "web_url"
+    ]
+    for k in o.keys():
+        if k not in k_groups:
+            del o[k]
+        elif o[k] is None or o[k] == '' or o[k] == "null":
+            del o[k]
+        else:
+            pass
+
+
 def clean_info_project(o):
     k_projects = [
         "first_commit_at", "contributors", "http_url_to_repo", "web_url",

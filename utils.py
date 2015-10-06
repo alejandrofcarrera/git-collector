@@ -22,6 +22,8 @@
 import settings as config
 import parser
 import redis
+import base64
+import json
 
 from glapi import GlAPI
 
@@ -41,7 +43,7 @@ def redis_create_pool(db):
         __redis_db.client_list()
         return __redis_db
     except Exception as e:
-        raise EnvironmentError("Configuration is not valid or Redis is not online")
+        raise EnvironmentError("- Configuration is not valid or Redis is not online")
 
 
 class Collector(object):
@@ -74,7 +76,7 @@ class Collector(object):
             __gl.login(login=config.GITLAB_USER, password=config.GITLAB_PASS)
             self.gl_instance = __gl
         except Exception as e:
-            raise EnvironmentError("Configuration is not valid or Gitlab is not online")
+            raise EnvironmentError("- Configuration is not valid or Gitlab is not online")
 
     def rd_connect(self):
         try:
@@ -87,18 +89,55 @@ class Collector(object):
 
     # Get Functions
 
-    def get_projects_from_redis(self):
-        __projects = self.rd_instance_pr.keys("projects:*:")
-        __projects_id = map(lambda x: int(x.split(":")[1]), __projects)
-        __projects = map(lambda x: self.rd_instance_pr.hgetall(x), __projects)
-        return dict(zip(__projects_id, __projects))
+    def get_keys_and_values_from_redis(self, key_str):
+        if key_str == "projects":
+            __mt = self.rd_instance_pr.keys(key_str + ":*:")
+        elif key_str == "users" or key_str == "groups":
+            __mt = self.rd_instance_us.keys(key_str + ":*:")
+        __mt_id = map(lambda x: int(x.split(":")[1]), __mt)
+        if key_str == "projects":
+            __mt = map(lambda x: self.rd_instance_pr.hgetall(x), __mt)
+        elif key_str == "users" or key_str == "groups":
+            __mt = map(lambda x: self.rd_instance_us.hgetall(x), __mt)
+        return dict(zip(__mt_id, __mt))
 
-    def get_projects_from_gitlab(self):
-        __projects = self.gl_instance.get_projects()
-        __projects_id = map(lambda x: int(x.get('id')), __projects)
-        return dict(zip(__projects_id, __projects))
+    def get_keys_and_values_from_gitlab(self, key_str):
+        if key_str == "projects":
+            __mt = self.gl_instance.get_projects()
+        elif key_str == "users":
+            __mt = self.gl_instance.get_users()
+            for i in __mt:
+                i['emails'] = [i.get('email')]
+                del i['email']
+                __em_lst = self.gl_instance.get_users_emails_byUid(uid=i.get('id'))
+                for j in __em_lst:
+                    i['emails'].append(j.get('email'))
+                i['emails'] = json.dumps(i['emails'])
+
+        elif key_str == "groups":
+            __mt = self.gl_instance.get_groups()
+        __mt_id = map(lambda x: int(x.get('id')), __mt)
+        return dict(zip(__mt_id, __mt))
 
     # Add Functions
+
+    def add_user_to_redis(self, us_id, us_info):
+        parser.clean_info_user(us_info)
+        self.rd_instance_us.hmset("users:" + str(us_id) + ":", us_info)
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message("- Added User %d" % int(us_id))
+
+    def add_group_to_redis(self, gr_id, gr_info):
+        parser.clean_info_group(gr_info)
+        gr_info["members"] = []
+        [gr_info["members"].append(x.get("id")) for x in self.gl_instance.get_groups_members_byId(id=gr_id)]
+        self.rd_instance_us.hmset("groups:" + str(gr_id) + ":", gr_info)
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message("- Added Group %d" % int(gr_id))
 
     def add_project_to_redis(self, pr_id, pr_info):
         if pr_info.get("owner") is None:
@@ -114,44 +153,45 @@ class Collector(object):
 
         # Print alert
         if config.DEBUGGER:
-            config.print_message(" * Added to Redis - Project %d" % int(pr_id))
+            config.print_message("- Added Project %d" % int(pr_id))
 
     def add_branches_to_redis(self, pr_id):
         __branches = self.gl_instance.get_projects_repository_branches_byId(id=pr_id)
         for i in __branches:
             parser.clean_info_branch(i)
-            self.rd_instance_br.hmset("projects:" + str(pr_id) + ":branches:" + i.get("id"), i)
+            self.rd_instance_br.hmset("projects:" + str(pr_id) + ":branches:" + i.get("id") + ":", i)
 
         # Print alert
         if config.DEBUGGER:
-            config.print_message(" * Added to Redis - %d Branches (%d)" % (len(__branches), int(pr_id)))
+            config.print_message("- Added %d Branches from project (%d)" % (len(__branches), int(pr_id)))
 
-    def update_projects(self):
+        return __branches
 
-        # Get Projects Metadata (Gitlab)
-        __pr_gl = self.get_projects_from_gitlab()
-        __pr_gl_id = __pr_gl.keys()
+    def update_information(self, update):
 
-        # Get Projects Metadata (Redis Cache)
-        __pr_rd = self.get_projects_from_redis()
-        __pr_rd_id = __pr_rd.keys()
+        config.print_message("* Updating %s ..." % update)
 
-        # Generate difference and intersection projects
-        __pr_new = list(set(__pr_gl_id).difference(set(__pr_rd_id)))
-        __pr_mod = list(set(__pr_gl_id).intersection(set(__pr_rd_id)))
-        __pr_del = list(set(__pr_rd_id).difference(set(__pr_gl_id)))
+        __mt_gl = self.get_keys_and_values_from_gitlab(update)
+        __mt_rd = self.get_keys_and_values_from_redis(update)
+        __mt_gl_id = __mt_gl.keys()
+        __mt_rd_id = __mt_rd.keys()
+
+        # Generate difference and intersection metadata
+        __mt_new = list(set(__mt_gl_id).difference(set(__mt_rd_id)))
+        __mt_mod = list(set(__mt_gl_id).intersection(set(__mt_rd_id)))
+        __mt_del = list(set(__mt_rd_id).difference(set(__mt_gl_id)))
 
         # Print alert
         if config.DEBUGGER:
-            config.print_message(" * Detected %d new projects" % len(__pr_new))
-            config.print_message(" * Detected %d deleted projects" % len(__pr_del))
-            config.print_message(" * Detected %d projects with possible updates" % len(__pr_mod))
+            config.print_message("- %d new | %d deleted | %d possible updates" %
+                                 (len(__mt_new), len(__mt_del), len(__mt_mod)))
 
-        # Insert New Project Metadata
-        for i in __pr_new:
-            self.add_project_to_redis(i, __pr_gl[i])
-            self.add_branches_to_redis(i)
-
-        # Delete Projects
-
-        # Update Projects
+        # Insert New Detected Metadata
+        for i in __mt_new:
+            if update == "users":
+                self.add_user_to_redis(i, __mt_gl[i])
+            elif update == "groups":
+                self.add_group_to_redis(i, __mt_gl[i])
+            elif update == "projects":
+                self.add_project_to_redis(i, __mt_gl[i])
+                self.add_branches_to_redis(i)

@@ -28,13 +28,15 @@ __author__ = 'Alejandro F. Carrera'
 
 if __name__ == '__main__':
 
-    config.print_message(" * %s (%s) Started" % (config.LONGNAME, config.VERSION))
+    config.print_message("* %s (%s) Started" % (config.LONGNAME, config.VERSION))
 
     # Create Object Collector
     try:
         __collector = utils.Collector()
-        __collector.update_projects()
+        __collector.update_information("users")
+        __collector.update_information("groups")
+        __collector.update_information("projects")
     except EnvironmentError as e:
         config.print_error(e.message)
 
-    config.print_message(" * %s (%s) Finished" % (config.LONGNAME, config.VERSION))
+    config.print_message("* %s (%s) Finished" % (config.LONGNAME, config.VERSION))
