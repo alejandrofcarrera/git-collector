@@ -21,9 +21,8 @@
 
 import settings as config
 import parser
-import redis
-import base64
-import json
+import commands, redis, base64
+import json, shutil, os
 
 from glapi import GlAPI
 
@@ -61,6 +60,7 @@ class Collector(object):
         self.rd_instance_us = None
         self.rd_instance_br = None
         self.rd_instance_co = None
+        self.rd_instance_usco = None
         try:
             self.gl_connect()
             self.rd_connect()
@@ -84,6 +84,7 @@ class Collector(object):
             self.rd_instance_us = redis_create_pool(config.REDIS_DB_US)
             self.rd_instance_br = redis_create_pool(config.REDIS_DB_BR)
             self.rd_instance_co = redis_create_pool(config.REDIS_DB_CO)
+            self.rd_instance_usco = redis_create_pool(config.REDIS_DB_USCO)
         except EnvironmentError as e:
             raise e
 
@@ -119,6 +120,55 @@ class Collector(object):
         __mt_id = map(lambda x: int(x.get('id')), __mt)
         return dict(zip(__mt_id, __mt))
 
+    # Inject Functions
+
+    def inject_branch_commits(self, pr_id, br_name, commits):
+        commits_push = []
+        c = 0
+        for i in commits:
+            if c == 10000:
+                self.rd_instance_br.zadd("projects:" + str(pr_id) + ":branches:" +
+                                         br_name + ":commits:", *commits_push)
+                commits_push = [i]
+                c = 1
+            else:
+                commits_push.append(i)
+                c += 1
+        self.rd_instance_br.zadd("projects:" + str(pr_id) + ":branches:" +
+                                 br_name + ":commits:", *commits_push)
+
+    def inject_project_commits(self, pr_id, commits):
+        commits_push = []
+        c = 0
+        for i in commits:
+            if c == 10000:
+                self.rd_instance_pr.zadd("projects:" + str(pr_id) + ":commits:", *commits_push)
+                commits_push = [i]
+                c = 1
+            else:
+                commits_push.append(i)
+                c += 1
+        self.rd_instance_pr.zadd("projects:" + str(pr_id) + ":commits:", *commits_push)
+
+    def inject_user_commits(self, pr_id, user_id, commits):
+        c = 0
+        commits_push = []
+        for i in commits:
+            if c == 10000:
+                self.rd_instance_usco.zadd(
+                    "users:" + str(user_id) + ":projects:" +
+                    str(pr_id) + ":commits:", *commits_push
+                )
+                commits_push = [i]
+                c = 1
+            else:
+                commits_push.append(i)
+                c += 1
+        self.rd_instance_usco.zadd(
+            "users:" + str(user_id) + ":projects:" +
+            str(pr_id) + ":commits:", *commits_push
+        )
+
     # Add Functions
 
     def add_user_to_redis(self, us_id, us_info):
@@ -139,6 +189,20 @@ class Collector(object):
         if config.DEBUGGER:
             config.print_message("- Added Group %d" % int(gr_id))
 
+    def add_project_to_filesystem(self, pr_info):
+        if not os.path.exists(config.COLLECTOR_GIT_FOLDER):
+            os.makedirs(config.COLLECTOR_GIT_FOLDER)
+        cur_dir = os.getcwd()
+        if not os.path.exists(config.COLLECTOR_GIT_FOLDER + pr_info.get("name")):
+            os.chdir(config.COLLECTOR_GIT_FOLDER)
+            commands.getstatusoutput("git clone --mirror " +
+                                     pr_info.get("http_url_to_repo") + " " + pr_info.get("name"))
+            os.chdir(cur_dir)
+
+            # Print alert
+            if config.DEBUGGER:
+                config.print_message("- Cloned Project " + pr_info.get("name"))
+
     def add_project_to_redis(self, pr_id, pr_info):
         if pr_info.get("owner") is None:
             pr_info["owner"] = "groups:" + str(pr_info.get("namespace").get("id"))
@@ -151,10 +215,6 @@ class Collector(object):
         parser.clean_info_project(pr_info)
         self.rd_instance_pr.hmset("projects:" + str(pr_id) + ":", pr_info)
 
-        # Print alert
-        if config.DEBUGGER:
-            config.print_message("- Added Project %d" % int(pr_id))
-
     def add_branches_to_redis(self, pr_id):
         __branches = self.gl_instance.get_projects_repository_branches_byId(id=pr_id)
         for i in __branches:
@@ -166,6 +226,120 @@ class Collector(object):
             config.print_message("- Added %d Branches from project (%d)" % (len(__branches), int(pr_id)))
 
         return __branches
+
+    def add_commits_to_redis(self, pr_id, pr_name):
+
+        # Get Branches about project
+        __br = self.rd_instance_br.keys("projects:" + str(pr_id) + ":branches:*:")
+        __br = map(lambda x: base64.b16decode(x.split(":")[3]), __br)
+
+        # Get Users emails
+        __us_emails = {}
+        __us = self.get_keys_and_values_from_redis("users")
+        for i in __us:
+            __em = json.loads(__us[i].get('emails'))
+            for j in __em:
+                __us_emails.update({j: i})
+
+        # Object for project information
+        __info = {
+            "collaborators": {},
+            "commits": {},
+            "authors": {}
+        }
+
+        for i in __br:
+            __br_info_collaborators = {}
+            __co_br = []
+            __co = self.gl_instance.get_projects_repository_commits_byId(id=pr_id, ref_name=i)
+            for j in __co:
+                parser.clean_info_commit(j)
+                if j.get('id') not in __info["commits"]:
+                    __info['commits'][j.get('id')] = j
+                    j_info = parser.get_info_commit(pr_name, j.get("id"), j.get("message"))
+                    __info['commits'][j.get('id')]["files_changed"] = j_info["files_changed"]
+                    __info['commits'][j.get('id')]["lines_added"] = j_info["lines_added"]
+                    __info['commits'][j.get('id')]["lines_removed"] = j_info["lines_removed"]
+                    self.rd_instance_co.hmset(
+                        "projects:" + str(pr_id) + ":commits:" +
+                        __info['commits'][j.get('id')].get("id") + ":",
+                        __info['commits'][j.get('id')]
+                    )
+                __co_br.append("projects:" + str(pr_id) + ":commits:" + j.get("id") + ":")
+                __co_br.append(__info['commits'][j.get('id')].get("created_at"))
+                j['author_email'] = __info['commits'][j.get('id')].get('author_email').lower()
+                if __info['commits'][j.get('id')].get('author_email') in __us_emails:
+                    collaborator_id = __us_emails[j.get('author_email')]
+                    if collaborator_id not in __info["authors"]:
+                        __info["authors"][collaborator_id] = []
+                    __info["authors"][collaborator_id].append(j)
+                    __br_info_collaborators[collaborator_id] = '1'
+                    __info['collaborators'][collaborator_id] = '1'
+
+            # Inject information to branch
+            __co.sort(key=lambda j: j.get('created_at'), reverse=False)
+            self.rd_instance_br.hset(
+                "projects:" + str(pr_id) + ":branches:" +
+                base64.b16encode(i) + ":", 'created_at',
+                __co[0].get('created_at')
+            )
+            self.rd_instance_br.hset(
+                "projects:" + str(pr_id) + ":branches:" +
+                base64.b16encode(i) + ":", 'last_commit',
+                __co[-1].get('id')
+            )
+            self.rd_instance_br.hset(
+                "projects:" + str(pr_id) + ":branches:" +
+                base64.b16encode(i) + ":", 'contributors',
+                __br_info_collaborators.keys()
+            )
+
+            # Inject commits to branch
+            self.inject_branch_commits(pr_id, base64.b16encode(i), __co_br)
+
+        # Inject commits to Project
+        __info['commits'] = __info['commits'].values()
+        __info['commits'].sort(key=lambda j: j.get('created_at'), reverse=False)
+        __co_pr = []
+        for i in __info["commits"]:
+            __co_pr.append("projects:" + str(pr_id) + ":commits:" + i.get("id") + ":")
+            __co_pr.append(i.get("created_at"))
+        self.inject_project_commits(pr_id, __co_pr)
+
+        # Inject Info Project
+        self.rd_instance_pr.hset(
+            "projects:" + str(pr_id) + ":", 'contributors',
+            __info['collaborators'].keys()
+        )
+        self.rd_instance_pr.hset(
+            "projects:" + str(pr_id) + ":", 'first_commit_at',
+            __co_pr[1]
+        )
+        self.rd_instance_pr.hset(
+            "projects:" + str(pr_id) + ":", 'last_commit_at',
+            __co_pr[-1]
+        )
+
+        # Inject Info User
+        for w in __info["authors"]:
+            __info["authors"][w].sort(key=lambda j: j.get('created_at'), reverse=False)
+            comm_un_project_user = []
+            for j in __info["authors"][w]:
+                comm_un_project_user.append("projects:" + str(i) + ":commits:" + j.get('id'))
+                comm_un_project_user.append(j.get('created_at'))
+            self.rd_instance_us.hset(
+                "users:" + str(w) + ":",
+                'first_commit_at', __info["authors"][w][0].get('created_at')
+            )
+            self.rd_instance_us.hset(
+                "users:" + str(w) + ":",
+                'last_commit_at', __info["authors"][w][-1].get('created_at')
+            )
+            self.inject_user_commits(pr_id, w, comm_un_project_user)
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message("* Added to Redis - %d Commits (%d)" % (len(__co), int(pr_id)))
 
     def update_information(self, update):
 
@@ -193,5 +367,11 @@ class Collector(object):
             elif update == "groups":
                 self.add_group_to_redis(i, __mt_gl[i])
             elif update == "projects":
+                self.add_project_to_filesystem(__mt_gl[i])
                 self.add_project_to_redis(i, __mt_gl[i])
                 self.add_branches_to_redis(i)
+                self.add_commits_to_redis(i, __mt_gl[i].get("name"))
+
+        # Delete Projects
+
+        # Update Projects
