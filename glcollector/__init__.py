@@ -19,29 +19,4 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import datetime
-import time
-
-from glcollector import settings as config
-from glcollector import utils
-
 __author__ = 'Alejandro F. Carrera'
-
-# MAIN
-
-if __name__ == '__main__':
-
-    st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    config.print_message("* %s (%s) Started - %s" % (config.LONGNAME, config.VERSION, st))
-
-    # Create Object Collector
-    try:
-        __collector = utils.Collector()
-        __collector.update_information("users")
-        __collector.update_information("groups")
-        __collector.update_information("projects")
-    except EnvironmentError as e:
-        config.print_error(e.message)
-
-    st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    config.print_message("* %s (%s) Finished - %s" % (config.LONGNAME, config.VERSION, st))

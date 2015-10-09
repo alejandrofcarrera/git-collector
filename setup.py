@@ -20,8 +20,9 @@
 """
 
 import os
-import settings as config
+
 from setuptools import setup, find_packages
+from glcollector import settings as config
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -39,7 +40,7 @@ setup(
     keywords="inner-source collector gl-enhancer",
     url="https://github.com/SmartDeveloperHub/gitlab-collector",
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['gl-api', 'redis', 'flask', 'flask_negotiate', 'GitPython', 'python-dateutil'],
+    install_requires=['gl-api', 'redis', 'flask', 'flask_negotiate', 'python-dateutil'],
     classifiers=[],
     scripts=['collector']
 )

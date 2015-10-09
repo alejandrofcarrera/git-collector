@@ -19,12 +19,16 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
+import commands
+import base64
+import json
+import os
+
+import redis
+from glapi import GlAPI
+
 import settings as config
 import parser
-import commands, redis, base64
-import json, shutil, os
-
-from glapi import GlAPI
 
 __author__ = 'Alejandro F. Carrera'
 
