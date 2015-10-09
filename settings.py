@@ -26,7 +26,7 @@ __author__ = 'Alejandro F. Carrera'
 
 # Collector Package Configuration
 NAME = "gl-collector"
-VERSION = "0.1.0"
+VERSION = "0.2.0"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
 
@@ -37,6 +37,9 @@ COLLECTOR_WEBHOOK_IP = os.environ.get("COLL_WEBHOOK_IP", "10.0.2.2")
 COLLECTOR_LISTEN_PROT = os.environ.get("COLL_LISTEN_PROT", "http")
 COLLECTOR_LISTEN_PORT = int(os.environ.get("COLL_LISTEN_PORT", 5000))
 COLLECTOR_LISTEN_IP = os.environ.get("COLL_LISTEN_IP", "0.0.0.0")
+
+# Collector Configuration Folder
+COLLECTOR_GIT_FOLDER = "/tmp/gl-collector/"
 
 # Gitlab Configuration to get data
 GITLAB_PROT = os.environ.get("COLL_GITLAB_PROT", "http")
@@ -51,9 +54,10 @@ REDIS_IP = os.environ.get("COLL_REDIS_IP", "127.0.0.1")
 REDIS_PORT = int(os.environ.get("COLL_REDIS_PORT", 6379))
 REDIS_PASS = os.environ.get("COLL_REDIS_PASS", None)
 REDIS_DB_PR = int(os.environ.get("COLL_REDIS_DB_PROJECTS", 0))
-REDIS_DB_US = int(os.environ.get("COLL_REDIS_DB_USERS", 1))
-REDIS_DB_BR = int(os.environ.get("COLL_REDIS_DB_BRANCHES", 2))
-REDIS_DB_CO = int(os.environ.get("COLL_REDIS_DB_COMMITS", 3))
+REDIS_DB_BR = int(os.environ.get("COLL_REDIS_DB_BRANCHES", 1))
+REDIS_DB_CO = int(os.environ.get("COLL_REDIS_DB_COMMITS", 2))
+REDIS_DB_US = int(os.environ.get("COLL_REDIS_DB_USERS", 3))
+REDIS_DB_USCO = int(os.environ.get("COLL_REDIS_DB_USER_COMMIT", 4))
 
 
 def print_message(msg):
