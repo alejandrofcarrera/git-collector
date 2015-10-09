@@ -92,12 +92,14 @@ class Collector(object):
 
     def get_keys_and_values_from_redis(self, key_str):
         if key_str == "projects":
-            __mt = self.rd_instance_pr.keys(key_str + ":*:")
+            __mt = self.rd_instance_pr.keys(key_str + ":*:commits:")
         elif key_str == "users" or key_str == "groups":
             __mt = self.rd_instance_us.keys(key_str + ":*:")
         __mt_id = map(lambda x: int(x.split(":")[1]), __mt)
         if key_str == "projects":
-            __mt = map(lambda x: self.rd_instance_pr.hgetall(x), __mt)
+            __mt = map(lambda x: self.rd_instance_pr.hgetall(
+                x.replace("commits:", "")
+            ), __mt)
         elif key_str == "users" or key_str == "groups":
             __mt = map(lambda x: self.rd_instance_us.hgetall(x), __mt)
         return dict(zip(__mt_id, __mt))
