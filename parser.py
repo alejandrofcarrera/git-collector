@@ -19,8 +19,9 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
+import settings as config
 from dateutil import parser
-import base64
+import commands, os, base64, re
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -39,6 +40,49 @@ def clean_info_commit(o):
             o[k] = long(parser.parse(o.get(k)).strftime("%s")) * 1000
         else:
             pass
+
+
+def get_info_commit(pr_name, id_commit, msg_commit):
+    cur_dir = os.getcwd()
+    os.chdir(config.COLLECTOR_GIT_FOLDER + pr_name)
+    __info_std = "git log --pretty=oneline --shortstat -1 " + id_commit
+    __info_std = commands.getoutput(__info_std)
+    __p = re.search(r"\d+ file", __info_std)
+    if __p is None:
+        return {
+            "files_changed": 0,
+            "lines_added": 0,
+            "lines_removed": 0
+        }
+    else:
+        __p = __p.start()
+    __info_std = __info_std[__p:]
+    __info_std = __info_std.split(", ")
+    if "files" not in __info_std[0]:
+        __info_res = {"files_changed": int(__info_std[0].replace(" file changed", ""))}
+    else:
+        __info_res = {"files_changed": int(__info_std[0].replace(" files changed", ""))}
+    if len(__info_std) > 1:
+        if "insertion" in __info_std[1]:
+            if "insertions" not in __info_std[1]:
+                __info_res["lines_added"] = int(__info_std[1].replace(" insertion(+)", ""))
+            else:
+                __info_res["lines_added"] = int(__info_std[1].replace(" insertions(+)", ""))
+        else:
+            __info_res["lines_added"] = 0
+            if "deletions" not in __info_std[1]:
+                __info_res["lines_removed"] = int(__info_std[1].replace(" deletion(-)", ""))
+            else:
+                __info_res["lines_removed"] = int(__info_std[1].replace(" deletions(-)", ""))
+    if len(__info_std) > 2:
+        if "deletions" not in __info_std[2]:
+            __info_res["lines_removed"] = int(__info_std[2].replace(" deletion(-)", ""))
+        else:
+            __info_res["lines_removed"] = int(__info_std[2].replace(" deletions(-)", ""))
+    else:
+        __info_res["lines_removed"] = 0
+    os.chdir(cur_dir)
+    return __info_res
 
 
 def clean_info_user(o):
