@@ -21,6 +21,7 @@
 
 import settings as config
 import utils
+import datetime, time
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -28,7 +29,8 @@ __author__ = 'Alejandro F. Carrera'
 
 if __name__ == '__main__':
 
-    config.print_message("* %s (%s) Started" % (config.LONGNAME, config.VERSION))
+    st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+    config.print_message("* %s (%s) Started - %s" % (config.LONGNAME, config.VERSION, st))
 
     # Create Object Collector
     try:
@@ -39,4 +41,5 @@ if __name__ == '__main__':
     except EnvironmentError as e:
         config.print_error(e.message)
 
-    config.print_message("* %s (%s) Finished" % (config.LONGNAME, config.VERSION))
+    st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
+    config.print_message("* %s (%s) Finished - %s" % (config.LONGNAME, config.VERSION, st))
