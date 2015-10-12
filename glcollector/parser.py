@@ -32,17 +32,7 @@ str_time_keys = [
 ]
 
 
-def clean_info_commit(o):
-    for k in o.keys():
-        if o[k] is None or o[k] == '' or o[k] == "null":
-            del o[k]
-        elif k in str_time_keys:
-            o[k] = long(parser.parse(o.get(k)).strftime("%s")) * 1000
-        else:
-            pass
-
-
-def get_info_commit(pr_name, id_commit, msg_commit):
+def get_info_commit(pr_name, id_commit):
     cur_dir = os.getcwd()
     os.chdir(config.COLLECTOR_GIT_FOLDER + pr_name)
     __info_std = "git log --pretty=oneline --shortstat -1 " + id_commit
@@ -83,6 +73,16 @@ def get_info_commit(pr_name, id_commit, msg_commit):
         __info_res["lines_removed"] = 0
     os.chdir(cur_dir)
     return __info_res
+
+
+def clean_info_commit(o):
+    for k in o.keys():
+        if o[k] is None or o[k] == '' or o[k] == "null":
+            del o[k]
+        elif k in str_time_keys:
+            o[k] = long(parser.parse(o.get(k)).strftime("%s")) * 1000
+        else:
+            pass
 
 
 def clean_info_user(o):
