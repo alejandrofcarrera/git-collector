@@ -199,7 +199,7 @@ def commits_to_redis(self, pr_id, pr_name):
     for i in __info["commits"]:
         __co_pr.append("projects:" + str(pr_id) + ":commits:" + i.get("id") + ":")
         __co_pr.append(i.get("created_at"))
-    inject.inject_project_commits(self.rd_instance_co, pr_id, __co_pr)
+    inject.inject_project_commits(self.rd_instance_pr, pr_id, __co_pr)
 
     # Insert information to project
     self.rd_instance_pr.hset(
