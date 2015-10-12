@@ -27,8 +27,12 @@ __author__ = 'Alejandro F. Carrera'
 def get_keys_from_redis(self, key_str):
     if key_str == "projects":
         __mt = self.rd_instance_pr.keys(key_str + ":*:commits:")
-    elif key_str == "users" or key_str == "groups":
+    elif key_str == "groups":
         __mt = self.rd_instance_us.keys(key_str + ":*:")
+    else:
+        __mt_us = self.rd_instance_us.keys(key_str + ":*:")
+        __mt_us_pr = self.rd_instance_us.keys(key_str + ":*:projects:*:")
+        __mt = list(set(__mt_us).difference(set(__mt_us_pr)))
     return map(lambda x: int(x.split(":")[1]), __mt)
 
 

@@ -30,7 +30,7 @@ __author__ = 'Alejandro F. Carrera'
 
 # Add Functions
 
-def add_user_to_redis(self, us_id, us_info):
+def user_to_redis(self, us_id, us_info):
     parser.clean_info_user(us_info)
     self.rd_instance_us.hmset("users:" + str(us_id) + ":", us_info)
 
@@ -39,7 +39,7 @@ def add_user_to_redis(self, us_id, us_info):
         config.print_message("- Added User %d" % int(us_id))
 
 
-def add_group_to_redis(self, gr_id, gr_info):
+def group_to_redis(self, gr_id, gr_info):
     parser.clean_info_group(gr_info)
     gr_info["members"] = []
     [gr_info["members"].append(x.get("id")) for x in self.gl_instance.get_groups_members_byId(id=gr_id)]
@@ -50,7 +50,7 @@ def add_group_to_redis(self, gr_id, gr_info):
         config.print_message("- Added Group %d" % int(gr_id))
 
 
-def add_project_to_filesystem(self, pr_info):
+def project_to_filesystem(self, pr_info):
     if not os.path.exists(config.COLLECTOR_GIT_FOLDER):
         os.makedirs(config.COLLECTOR_GIT_FOLDER)
     cur_dir = os.getcwd()
@@ -65,7 +65,7 @@ def add_project_to_filesystem(self, pr_info):
             config.print_message("- Cloned Project " + pr_info.get("name"))
 
 
-def add_project_to_redis(self, pr_id, pr_info):
+def project_to_redis(self, pr_id, pr_info):
     if pr_info.get("owner") is None:
         pr_info["owner"] = "groups:" + str(pr_info.get("namespace").get("id"))
     else:
@@ -78,7 +78,7 @@ def add_project_to_redis(self, pr_id, pr_info):
     self.rd_instance_pr.hmset("projects:" + str(pr_id) + ":", pr_info)
 
 
-def add_branches_to_redis(self, pr_id):
+def branches_to_redis(self, pr_id):
     __branches = self.gl_instance.get_projects_repository_branches_byId(id=pr_id)
     for i in __branches:
         parser.clean_info_branch(i)
@@ -91,7 +91,7 @@ def add_branches_to_redis(self, pr_id):
     return __branches
 
 
-def add_commits_to_redis(self, pr_id, pr_name):
+def commits_to_redis(self, pr_id, pr_name):
 
     # Get Branches about project
     __br = self.rd_instance_br.keys("projects:" + str(pr_id) + ":branches:*:")
@@ -103,7 +103,7 @@ def add_commits_to_redis(self, pr_id, pr_name):
     for i in __us:
         __em = json.loads(__us[i].get('emails'))
         for j in __em:
-            __us_emails.update({j: i})
+            __us_emails.update({str(j).lower(): i})
 
     # Object for project information
     __info = {
@@ -112,94 +112,134 @@ def add_commits_to_redis(self, pr_id, pr_name):
         "authors": {}
     }
 
+    # For through Branches
     for i in __br:
+
+        # Data structure for branch's collaborators
         __br_info_collaborators = {}
+
+        # Create Redis Data structure (id + score, in this case timestamp)
         __co_br = []
+
+        # Get all commits from specific branch
         __co = self.gl_instance.get_projects_repository_commits_byId(id=pr_id, ref_name=i)
+
+        # For through these commits
         for j in __co:
             parser.clean_info_commit(j)
-            if j.get('id') not in __info["commits"]:
-                __info['commits'][j.get('id')] = j
-                j_info = parser.get_info_commit(pr_name, j.get("id"))
-                __info['commits'][j.get('id')]["files_changed"] = j_info["files_changed"]
-                __info['commits'][j.get('id')]["lines_added"] = j_info["lines_added"]
-                __info['commits'][j.get('id')]["lines_removed"] = j_info["lines_removed"]
+            __co_id = j.get("id")
+            __co_info = j
+
+            # Detect unique repository commits (sha)
+            # Also get extra info from git log and save commit
+            if __co_id not in __info["commits"]:
+                __info['commits'][__co_id] = __co_info
+                parser.get_info_commit(pr_name, __co_info)
                 self.rd_instance_co.hmset(
                     "projects:" + str(pr_id) + ":commits:" +
-                    __info['commits'][j.get('id')].get("id") + ":",
-                    __info['commits'][j.get('id')]
+                    __co_info.get("id") + ":", __co_info
                 )
-            __co_br.append("projects:" + str(pr_id) + ":commits:" + j.get("id") + ":")
-            __co_br.append(__info['commits'][j.get('id')].get("created_at"))
-            j['author_email'] = __info['commits'][j.get('id')].get('author_email').lower()
-            if __info['commits'][j.get('id')].get('author_email') in __us_emails:
-                collaborator_id = __us_emails[j.get('author_email')]
+
+            # Set values at Redis Structure (id + timestamp)
+            __co_br.append("projects:" + str(pr_id) + ":commits:" + __co_id + ":")
+            __co_br.append(__co_info.get("created_at"))
+
+            # Get email from commit
+            __co_em = __co_info.get('author_email').lower()
+
+            # Detect if committer is registered user
+            if __co_em in __us_emails:
+
+                # Get Redis ID and set author to commit info
+                collaborator_id = __us_emails[__co_em]
+                self.rd_instance_co.hset(
+                    "projects:" + str(pr_id) + ":commits:" +
+                    __co_info.get("id") + ":", "author",
+                    "users:" + str(collaborator_id) + ":"
+                )
+
+                # Save metadata for later (users info)
                 if collaborator_id not in __info["authors"]:
-                    __info["authors"][collaborator_id] = []
-                __info["authors"][collaborator_id].append(j)
+                    __info["authors"][collaborator_id] = {}
+                if __co_info.get("id") not in __info["authors"][collaborator_id]:
+                    __info["authors"][collaborator_id][__co_info.get("id")] = __co_info
                 __br_info_collaborators[collaborator_id] = '1'
                 __info['collaborators'][collaborator_id] = '1'
 
-        # Inject information to branch
+        # Sort Branch's commits by timestamp
         __co.sort(key=lambda j: j.get('created_at'), reverse=False)
-        self.rd_instance_br.hset(
-            "projects:" + str(pr_id) + ":branches:" +
-            base64.b16encode(i) + ":", 'created_at',
-            __co[0].get('created_at')
-        )
-        self.rd_instance_br.hset(
-            "projects:" + str(pr_id) + ":branches:" +
-            base64.b16encode(i) + ":", 'last_commit',
-            __co[-1].get('id')
-        )
+
+        # Inject commits to branch from data structure filled
+        inject.inject_branch_commits(self.rd_instance_br, pr_id, base64.b16encode(i), __co_br)
+
+        # Insert information to branch
         self.rd_instance_br.hset(
             "projects:" + str(pr_id) + ":branches:" +
             base64.b16encode(i) + ":", 'contributors',
             __br_info_collaborators.keys()
         )
-
-        # Inject commits to branch
-        inject.inject_branch_commits(self.rd_instance_br, pr_id, base64.b16encode(i), __co_br)
+        if len(__co) > 0:
+            self.rd_instance_br.hset(
+                "projects:" + str(pr_id) + ":branches:" +
+                base64.b16encode(i) + ":", 'created_at',
+                __co[0].get('created_at')
+            )
+            self.rd_instance_br.hset(
+                "projects:" + str(pr_id) + ":branches:" +
+                base64.b16encode(i) + ":", 'last_commit',
+                __co[-1].get('id')
+            )
 
     # Inject commits to Project
     __info['commits'] = __info['commits'].values()
     __info['commits'].sort(key=lambda j: j.get('created_at'), reverse=False)
+
+    # Create and inject Redis Data structure (same case like Branch)
     __co_pr = []
     for i in __info["commits"]:
         __co_pr.append("projects:" + str(pr_id) + ":commits:" + i.get("id") + ":")
         __co_pr.append(i.get("created_at"))
     inject.inject_project_commits(self.rd_instance_co, pr_id, __co_pr)
 
-    # Inject Info Project
+    # Insert information to project
     self.rd_instance_pr.hset(
         "projects:" + str(pr_id) + ":", 'contributors',
         __info['collaborators'].keys()
     )
-    self.rd_instance_pr.hset(
-        "projects:" + str(pr_id) + ":", 'first_commit_at',
-        __co_pr[1]
-    )
-    self.rd_instance_pr.hset(
-        "projects:" + str(pr_id) + ":", 'last_commit_at',
-        __co_pr[-1]
-    )
+    if len(__co_pr) > 0:
+        self.rd_instance_pr.hset(
+            "projects:" + str(pr_id) + ":", 'first_commit_at',
+            __co_pr[1]
+        )
+        self.rd_instance_pr.hset(
+            "projects:" + str(pr_id) + ":", 'last_commit_at',
+            __co_pr[-1]
+        )
 
-    # Inject Info User
+    # For through project's authors
     for w in __info["authors"]:
-        __info["authors"][w].sort(key=lambda j: j.get('created_at'), reverse=False)
+
+        # Sort authors's commits by timestamp
+        __info["authors"][w] = __info["authors"][w].values()
+        __info["authors"][w].sort(key=lambda x: x.get('created_at'), reverse=False)
+
+        # Create and inject Redis Data structure (same case like Project or Branch)
         comm_un_project_user = []
         for j in __info["authors"][w]:
-            comm_un_project_user.append("projects:" + str(i) + ":commits:" + j.get('id'))
+            comm_un_project_user.append("projects:" + str(pr_id) + ":commits:" + j.get("id"))
             comm_un_project_user.append(j.get('created_at'))
-        self.rd_instance_us.hset(
-            "users:" + str(w) + ":",
-            'first_commit_at', __info["authors"][w][0].get('created_at')
-        )
-        self.rd_instance_us.hset(
-            "users:" + str(w) + ":",
-            'last_commit_at', __info["authors"][w][-1].get('created_at')
-        )
         inject.inject_user_commits(self.rd_instance_us, pr_id, w, comm_un_project_user)
+
+        # Insert information to user
+        if len(comm_un_project_user) > 0:
+            __first = comm_un_project_user[1]
+            __last = comm_un_project_user[-1]
+            __first_us = self.rd_instance_us.hget("users:" + str(w) + ":", "first_commit_at")
+            __last_us = self.rd_instance_us.hget("users:" + str(w) + ":", "last_commit_at")
+            if __first_us is None or __first_us > __first:
+                self.rd_instance_us.hset("users:" + str(w) + ":", "first_commit_at", __first)
+            if __last_us is None or __last_us < __last:
+                self.rd_instance_us.hset("users:" + str(w) + ":", "last_commit_at", __last)
 
     # Print alert
     if config.DEBUGGER:
