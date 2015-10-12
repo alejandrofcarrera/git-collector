@@ -226,9 +226,9 @@ def commits_to_redis(self, pr_id, pr_name):
         # Create and inject Redis Data structure (same case like Project or Branch)
         comm_un_project_user = []
         for j in __info["authors"][w]:
-            comm_un_project_user.append("projects:" + str(pr_id) + ":commits:" + j.get("id"))
+            comm_un_project_user.append("projects:" + str(pr_id) + ":commits:" + j.get("id") + ":")
             comm_un_project_user.append(j.get('created_at'))
-        inject.inject_user_commits(self.rd_instance_us, pr_id, w, comm_un_project_user)
+        inject.inject_user_commits(self.rd_instance_usco, pr_id, w, comm_un_project_user)
 
         # Insert information to user
         if len(comm_un_project_user) > 0:
