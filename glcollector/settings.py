@@ -59,6 +59,36 @@ REDIS_DB_CO = int(os.environ.get("COLL_REDIS_DB_COMMITS", 2))
 REDIS_DB_US = int(os.environ.get("COLL_REDIS_DB_USERS", 3))
 REDIS_DB_USCO = int(os.environ.get("COLL_REDIS_DB_USER_COMMIT", 4))
 
+# Fields about User
+# http://doc.gitlab.com/ce/api/users.html#for-admin
+GITLAB_USER_FIELDS = [
+    "username", "name", "twitter", "created_at",
+    "linkedin", "email", "state", "avatar_url",
+    "skype", "id", "website_url", "first_commit_at",
+    "emails", "last_commit_at"
+]
+
+# Fields about Group
+# http://doc.gitlab.com/ce/api/groups.html#list-project-groups
+GITLAB_GROUP_FIELDS = [
+    "name", "path", "description", "avatar_url", "web_url"
+]
+
+# Fields about Repository
+# http://doc.gitlab.com/ce/api/projects.html#get-single-project
+GITLAB_REPO_FIELDS = [
+    "first_commit_at", "contributors", "http_url_to_repo", "web_url",
+    "owner", "id", "archived", "public", "description", "default_branch",
+    "last_commit_at", "last_activity_at", "name", "created_at", "avatar_url",
+    "tags"
+]
+
+# Fields about Branch
+# http://doc.gitlab.com/ce/api/projects.html#list-single-branch
+GITLAB_BRANCH_FIELDS = [
+    "name", "protected"
+]
+
 
 def print_message(msg):
     if DEBUGGER:

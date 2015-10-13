@@ -22,6 +22,7 @@
 import settings as config
 from dateutil import parser
 import commands, os, base64, re
+import json
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -30,6 +31,38 @@ str_time_keys = [
     'due_date', 'authored_date', 'committed_date',
     'first_commit_at', 'last_commit_at'
 ]
+
+
+def join_users(user_one, user_two):
+    k_users = {
+        "username": "string",
+        "name": "string",
+        "avatar_url": "string",
+        "state": "string",
+        "id": "int",
+        "emails": "array",
+        "created_at": "long"
+    }
+    new_user = {}
+    for i in user_one.keys():
+        if k_users[i] == "string" and str(user_one[i]) != str(user_two[i]):
+            new_user[i] = user_one
+        elif k_users[i] == "int" and int(user_one[i]) != int(user_two[i]):
+            new_user[i] = user_one
+        elif k_users[i] == "long" and long(user_one[i]) != long(user_two[i]):
+            new_user[i] = user_one
+        elif k_users[i] == "array":
+            a_user_one = json.loads(user_one[i])
+            b_user_one = json.loads(user_two[i])
+            em_news = list(set(a_user_one).difference(set(b_user_one)))
+            if len(em_news) > 0:
+                new_user[i] = a_user_one
+        else:
+            pass
+    if len(new_user.keys()) > 0:
+        return new_user
+    else:
+        return None
 
 
 def get_info_commit(pr_name, commit):
@@ -83,14 +116,8 @@ def clean_info_commit(o):
 
 
 def clean_info_user(o):
-    k_users = [
-        "username", "name", "twitter", "created_at",
-        "linkedin", "email", "state", "avatar_url",
-        "skype", "id", "website_url", "first_commit_at",
-        "emails", "last_commit_at"
-    ]
     for k in o.keys():
-        if k not in k_users:
+        if k not in config.GITLAB_USER_FIELDS:
             del o[k]
         elif o[k] is None or o[k] == '' or o[k] == "null":
             del o[k]
@@ -101,11 +128,8 @@ def clean_info_user(o):
 
 
 def clean_info_group(o):
-    k_groups = [
-        "name", "path", "description", "avatar_url", "web_url"
-    ]
     for k in o.keys():
-        if k not in k_groups:
+        if k not in config.GITLAB_GROUP_FIELDS:
             del o[k]
         elif o[k] is None or o[k] == '' or o[k] == "null":
             del o[k]
@@ -114,14 +138,8 @@ def clean_info_group(o):
 
 
 def clean_info_project(o):
-    k_projects = [
-        "first_commit_at", "contributors", "http_url_to_repo", "web_url",
-        "owner", "id", "archived", "public", "description", "default_branch",
-        "last_commit_at", "last_activity_at", "name", "created_at", "avatar_url",
-        "tags"
-    ]
     for k in o.keys():
-        if k not in k_projects:
+        if k not in config.GITLAB_REPO_FIELDS:
             del o[k]
         elif o[k] is None or o[k] == '' or o[k] == "null":
             del o[k]
@@ -136,11 +154,8 @@ def clean_info_project(o):
 
 
 def clean_info_branch(o):
-    k_branches = [
-        "name", "protected"
-    ]
     for k in o.keys():
-        if k not in k_branches:
+        if k not in config.GITLAB_BRANCH_FIELDS:
             del o[k]
         elif k == "name":
             o["id"] = base64.b16encode(o.get(k))

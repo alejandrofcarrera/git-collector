@@ -23,7 +23,8 @@ import redis
 from glapi import GlAPI
 
 import settings as config
-import sniff, redis_db_add, redis_db_rm
+import sniff, redis_db_add
+import redis_db_rm, redis_db_mod
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -128,3 +129,6 @@ class Collector(object):
                 redis_db_rm.project_from_redis(self, i)
 
         # Update Projects
+        for i in __mt_mod:
+            if update == "users":
+                redis_db_mod.user_from_gitlab(self, i, __mt_gl[i])
