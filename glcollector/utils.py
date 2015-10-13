@@ -23,7 +23,7 @@ import redis
 from glapi import GlAPI
 
 import settings as config
-import sniff, redis_db_add
+import sniff, redis_db_add, redis_db_rm
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -105,18 +105,26 @@ class Collector(object):
             config.print_message("- %d new | %d deleted | %d possible updates" %
                                  (len(__mt_new), len(__mt_del), len(__mt_mod)))
 
-        # Insert New Detected Metadata
+        # Insert New Information
         for i in __mt_new:
             if update == "users":
                 redis_db_add.user_to_redis(self, i, __mt_gl[i])
             elif update == "groups":
                 redis_db_add.group_to_redis(self, i, __mt_gl[i])
             elif update == "projects":
-                redis_db_add.project_to_filesystem(self, __mt_gl[i])
+                redis_db_add.project_to_filesystem(__mt_gl[i])
                 redis_db_add.project_to_redis(self, i, __mt_gl[i])
                 redis_db_add.branches_to_redis(self, i)
                 redis_db_add.commits_to_redis(self, i, __mt_gl[i].get("name"))
 
         # Delete Information
+        for i in __mt_del:
+            if update == "users":
+                redis_db_rm.user_from_redis(self, i)
+            elif update == "groups":
+                redis_db_rm.group_from_redis(self, i)
+            elif update == "projects":
+                redis_db_rm.project_from_filesystem(self, __mt_gl[i])
+                redis_db_rm.project_from_redis(self, i)
 
         # Update Projects

@@ -50,7 +50,7 @@ def group_to_redis(self, gr_id, gr_info):
         config.print_message("- Added Group %d" % int(gr_id))
 
 
-def project_to_filesystem(self, pr_info):
+def project_to_filesystem(pr_info):
     if not os.path.exists(config.COLLECTOR_GIT_FOLDER):
         os.makedirs(config.COLLECTOR_GIT_FOLDER)
     cur_dir = os.getcwd()
