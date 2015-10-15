@@ -123,6 +123,7 @@ def clean_info_user(o):
             del o[k]
         elif k == "email":
             o["primary_email"] = o.get(k)
+            del o[k]
         elif o[k] is None or o[k] == '' or o[k] == "null":
             del o[k]
         elif k in str_time_keys:

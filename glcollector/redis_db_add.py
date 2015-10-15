@@ -20,7 +20,6 @@
 """
 import commands
 import base64
-import json
 import os
 import settings as config
 import parser, inject, sniff
@@ -113,7 +112,7 @@ def commits_to_redis(self, pr_id, pr_name):
     __us_emails = {}
     __us = sniff.get_values_from_redis(self, "users")
     for i in __us:
-        __em = json.loads(__us[i].get('emails'))
+        __em = eval(__us[i].get('emails'))
         for j in __em:
             __us_emails.update({str(j).lower(): i})
 
