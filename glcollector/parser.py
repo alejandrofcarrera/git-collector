@@ -29,7 +29,7 @@ __author__ = 'Alejandro F. Carrera'
 str_time_keys = [
     'created_at', 'updated_at', 'last_activity_at',
     'due_date', 'authored_date', 'committed_date',
-    'first_commit_at', 'last_commit_at'
+    'first_commit_at', 'last_commit_at', 'current_sign_in_at'
 ]
 
 
@@ -46,11 +46,13 @@ def join_users(user_one, user_two):
     new_user = {}
     for i in user_one.keys():
         if k_users[i] == "string" and str(user_one[i]) != str(user_two[i]):
-            new_user[i] = user_one
+            new_user[i] = user_one[i]
+            if i == "state" and str(user_one[i]) == "blocked":
+                new_user["gitlab_status"] = "blocked"
         elif k_users[i] == "int" and int(user_one[i]) != int(user_two[i]):
-            new_user[i] = user_one
+            new_user[i] = user_one[i]
         elif k_users[i] == "long" and long(user_one[i]) != long(user_two[i]):
-            new_user[i] = user_one
+            new_user[i] = user_one[i]
         elif k_users[i] == "array":
             a_user_one = json.loads(user_one[i])
             b_user_one = json.loads(user_two[i])
@@ -119,6 +121,8 @@ def clean_info_user(o):
     for k in o.keys():
         if k not in config.GITLAB_USER_FIELDS:
             del o[k]
+        elif k == "email":
+            o["primary_email"] = o.get(k)
         elif o[k] is None or o[k] == '' or o[k] == "null":
             del o[k]
         elif k in str_time_keys:

@@ -57,10 +57,14 @@ class Collector(object):
     def __init__(self):
         self.gl_instance = None
         self.rd_instance_pr = None
-        self.rd_instance_us = None
         self.rd_instance_br = None
         self.rd_instance_co = None
-        self.rd_instance_usco = None
+        self.rd_instance_us = None
+        self.rd_instance_pr_co = None
+        self.rd_instance_br_co = None
+        self.rd_instance_us_pr = None
+        self.rd_instance_us_br = None
+        self.rd_instance_us_co = None
         try:
             self.gl_connect()
             self.rd_connect()
@@ -81,10 +85,14 @@ class Collector(object):
     def rd_connect(self):
         try:
             self.rd_instance_pr = redis_create_pool(config.REDIS_DB_PR)
-            self.rd_instance_us = redis_create_pool(config.REDIS_DB_US)
             self.rd_instance_br = redis_create_pool(config.REDIS_DB_BR)
             self.rd_instance_co = redis_create_pool(config.REDIS_DB_CO)
-            self.rd_instance_usco = redis_create_pool(config.REDIS_DB_USCO)
+            self.rd_instance_us = redis_create_pool(config.REDIS_DB_US)
+            self.rd_instance_pr_co = redis_create_pool(config.REDIS_DB_PR_CO)
+            self.rd_instance_br_co = redis_create_pool(config.REDIS_DB_BR_CO)
+            self.rd_instance_us_pr = redis_create_pool(config.REDIS_DB_US_PR)
+            self.rd_instance_us_br = redis_create_pool(config.REDIS_DB_US_BR)
+            self.rd_instance_us_co = redis_create_pool(config.REDIS_DB_US_CO)
         except EnvironmentError as e:
             raise e
 
@@ -119,16 +127,15 @@ class Collector(object):
                 redis_db_add.commits_to_redis(self, i, __mt_gl[i].get("name"))
 
         # Delete Information
-        for i in __mt_del:
-            if update == "users":
-                redis_db_rm.user_from_redis(self, i)
-            elif update == "groups":
-                redis_db_rm.group_from_redis(self, i)
-            elif update == "projects":
-                redis_db_rm.project_from_filesystem(self, __mt_gl[i])
-                redis_db_rm.project_from_redis(self, i)
+        #for i in __mt_del:
+        #    if update == "users":
+        #       redis_db_rm.user_from_redis(self, i)
+        #    elif update == "groups":
+        #        redis_db_rm.group_from_redis(self, i)
+        #    elif update == "projects":
+        #        redis_db_rm.project_from_redis(self, i)
 
         # Update Projects
-        for i in __mt_mod:
-            if update == "users":
-                redis_db_mod.user_from_gitlab(self, i, __mt_gl[i])
+        # for i in __mt_mod:
+        #    if update == "users":
+        #        redis_db_mod.user_from_gitlab(self, i, __mt_gl[i])

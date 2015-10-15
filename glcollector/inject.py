@@ -29,15 +29,13 @@ def inject_branch_commits(rd, pr_id, br_name, commits):
     c = 0
     for i in commits:
         if c == 10000:
-            rd.zadd("projects:" + str(pr_id) + ":branches:" +
-                    br_name + ":commits:", *commits_push)
+            rd.zadd("p_" + str(pr_id) + ":" + br_name, *commits_push)
             commits_push = [i]
             c = 1
         else:
             commits_push.append(i)
             c += 1
-    rd.zadd("projects:" + str(pr_id) + ":branches:" +
-            br_name + ":commits:", *commits_push)
+    rd.zadd("p_" + str(pr_id) + ":" + br_name, *commits_push)
 
 
 def inject_project_commits(rd, pr_id, commits):
@@ -45,13 +43,13 @@ def inject_project_commits(rd, pr_id, commits):
     c = 0
     for i in commits:
         if c == 10000:
-            rd.zadd("projects:" + str(pr_id) + ":commits:", *commits_push)
+            rd.zadd("p_" + str(pr_id), *commits_push)
             commits_push = [i]
             c = 1
         else:
             commits_push.append(i)
             c += 1
-    rd.zadd("projects:" + str(pr_id) + ":commits:", *commits_push)
+    rd.zadd("p_" + str(pr_id), *commits_push)
 
 
 def inject_user_commits(rd, pr_id, user_id, commits):
@@ -59,16 +57,11 @@ def inject_user_commits(rd, pr_id, user_id, commits):
     commits_push = []
     for i in commits:
         if c == 10000:
-            rd.zadd(
-                "users:" + str(user_id) + ":projects:" +
-                str(pr_id) + ":commits:", *commits_push
-            )
+            rd.zadd(user_id + ":p_" + str(pr_id), *commits_push)
             commits_push = [i]
             c = 1
         else:
             commits_push.append(i)
             c += 1
-    rd.zadd(
-        "users:" + str(user_id) + ":projects:" +
-        str(pr_id) + ":commits:", *commits_push
-    )
+    rd.zadd(user_id + ":p_" + str(pr_id), *commits_push)
+

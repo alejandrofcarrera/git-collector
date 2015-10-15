@@ -53,25 +53,34 @@ GITLAB_VER_SSL = bool(os.environ.get("COLL_GITLAB_VERIFY_SSL", False))
 REDIS_IP = os.environ.get("COLL_REDIS_IP", "127.0.0.1")
 REDIS_PORT = int(os.environ.get("COLL_REDIS_PORT", 6379))
 REDIS_PASS = os.environ.get("COLL_REDIS_PASS", "gitlab-colenh")
-REDIS_DB_PR = int(os.environ.get("COLL_REDIS_DB_PROJECTS", 0))
-REDIS_DB_BR = int(os.environ.get("COLL_REDIS_DB_BRANCHES", 1))
-REDIS_DB_CO = int(os.environ.get("COLL_REDIS_DB_COMMITS", 2))
-REDIS_DB_US = int(os.environ.get("COLL_REDIS_DB_USERS", 3))
-REDIS_DB_USCO = int(os.environ.get("COLL_REDIS_DB_USER_COMMIT", 4))
+
+# Redis Configuration (Main Entities)
+REDIS_DB_PR = int(os.environ.get("COLL_REDIS_DB_PROJECT", 0))
+REDIS_DB_BR = int(os.environ.get("COLL_REDIS_DB_BRANCH", 1))
+REDIS_DB_CO = int(os.environ.get("COLL_REDIS_DB_COMMIT", 2))
+REDIS_DB_US = int(os.environ.get("COLL_REDIS_DB_USER", 3))
+
+# Redis Configuration (Relations)
+REDIS_DB_PR_CO = int(os.environ.get("COLL_REDIS_DB_PROJECT_COMMIT", 4))
+REDIS_DB_BR_CO = int(os.environ.get("COLL_REDIS_DB_BRANCH_COMMIT", 5))
+REDIS_DB_US_PR = int(os.environ.get("COLL_REDIS_DB_USER_PROJECT", 6))
+REDIS_DB_US_BR = int(os.environ.get("COLL_REDIS_DB_USER_BRANCH", 7))
+REDIS_DB_US_CO = int(os.environ.get("COLL_REDIS_DB_USER_COMMIT", 8))
 
 # Fields about User
 # http://doc.gitlab.com/ce/api/users.html#for-admin
 GITLAB_USER_FIELDS = [
-    "username", "name", "twitter", "created_at",
+    "username", "name", "twitter", "created_at", "bio",
     "linkedin", "email", "state", "avatar_url",
     "skype", "id", "website_url", "first_commit_at",
-    "emails", "last_commit_at"
+    "emails", "last_commit_at", "current_sign_in_at",
+    "web_url", "website_url"
 ]
 
 # Fields about Group
 # http://doc.gitlab.com/ce/api/groups.html#list-project-groups
 GITLAB_GROUP_FIELDS = [
-    "name", "path", "description", "avatar_url", "web_url"
+    "id", "name", "path", "description", "avatar_url", "web_url"
 ]
 
 # Fields about Repository
