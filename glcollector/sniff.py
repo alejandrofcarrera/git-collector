@@ -26,16 +26,17 @@ __author__ = 'Alejandro F. Carrera'
 
 
 def get_keys_from_redis(self, key_str):
+    __str = key_str[0] + "_"
     if key_str == "projects":
-        return self.rd_instance_pr.keys("p_*")
-    elif key_str == "groups":
-        return self.rd_instance_us.keys("g_*")
+        __mt = self.rd_instance_pr.keys(__str + "*")
     else:
-        return self.rd_instance_us.keys("u_*")
+        __mt = self.rd_instance_us.keys(__str + "*")
+    return map(lambda x: int(x.replace(__str, "")), __mt)
 
 
 def get_values_from_redis(self, key_str):
-    dict_keys = get_keys_from_redis(self, key_str)
+    __dc_keys = get_keys_from_redis(self, key_str)
+    dict_keys = map(lambda x: key_str[0] + "_" + str(x), __dc_keys)
     if key_str == "projects":
         __mt = map(lambda x: self.rd_instance_pr.hgetall(str(x)), dict_keys)
     else:
