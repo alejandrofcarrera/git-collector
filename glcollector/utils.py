@@ -117,7 +117,11 @@ class Collector(object):
         # Insert New Information
         for i in __mt_new:
             if update == "users":
-                redis_db_add.user_to_redis(self, i, __mt_gl[i])
+                __mt_pr_id = sniff.get_keys_from_redis(self, "projects")
+                if len(__mt_pr_id) > 0:
+                    redis_db_mod.user_to_redis_and_update(self, i, __mt_gl[i])
+                else:
+                    redis_db_add.user_to_redis(self, i, __mt_gl[i])
             elif update == "groups":
                 redis_db_add.group_to_redis(self, i, __mt_gl[i])
             elif update == "projects":
