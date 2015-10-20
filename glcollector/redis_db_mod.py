@@ -111,4 +111,4 @@ def user_to_redis_and_update(self, us_id, us_info):
 
     # Print alert
     if config.DEBUGGER:
-        config.print_message("- Added User %d with old information" % int(us_id))
+        config.print_message("- Added User %d" % int(us_id))
