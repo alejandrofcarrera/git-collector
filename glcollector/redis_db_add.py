@@ -86,6 +86,8 @@ def project_to_redis(self, pr_id, pr_info):
         lambda x: x.get("name").encode("ascii", "ignore"),
         self.gl_instance.get_projects_repository_tags_byId(id=pr_id)
     )
+    pr_info['state'] = 'archived' if pr_info['archived'] == 'true' else 'active'
+    del pr_info['archived']
     self.rd_instance_pr.hmset("p_" + str(pr_id), pr_info)
 
 
