@@ -131,13 +131,13 @@ class Collector(object):
                 redis_db_add.commits_to_redis(self, i, __mt_gl[i].get("name"))
 
         # Delete Information
-        #for i in __mt_del:
-        #    if update == "users":
-        #       redis_db_rm.user_from_redis(self, i)
-        #    elif update == "groups":
-        #        redis_db_rm.group_from_redis(self, i)
-        #    elif update == "projects":
-        #        redis_db_rm.project_from_redis(self, i)
+        for i in __mt_del:
+            if update == "users":
+                redis_db_rm.user_from_redis(self, i)
+            elif update == "groups":
+                redis_db_rm.group_from_redis(self, i)
+            elif update == "projects":
+                redis_db_rm.project_from_redis(self, i)
 
         # Update Projects
         # for i in __mt_mod:

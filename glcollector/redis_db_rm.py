@@ -20,10 +20,9 @@
 """
 import shutil
 import base64
-import json
 import os
 import settings as config
-import parser, inject, sniff
+import inject
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -144,63 +143,38 @@ def user_from_redis(self, us_id):
         config.print_message("- Removed User %d" % int(us_id))
 
 
-# TODO: test what happens with owned projects by group
 def group_from_redis(self, gr_id):
 
-    # Delete group from redis
-    self.rd_instance_us.delete("groups:" + str(gr_id) + ":")
+    # Set flag to deleted
+    self.rd_instance_us.hset("g_" + str(gr_id), "state", "deleted")
 
     # Print alert
     if config.DEBUGGER:
         config.print_message("- Removed Group %d" % int(gr_id))
 
 
+def project_to_filesystem(pr_info):
+    cur_dir = os.getcwd()
+    if os.path.exists(config.COLLECTOR_GIT_FOLDER + pr_info.get("name")):
+        os.chdir(config.COLLECTOR_GIT_FOLDER)
+        shutil.move(
+            config.COLLECTOR_GIT_FOLDER + pr_info.get("name"),
+            config.COLLECTOR_GIT_FOLDER + pr_info.get("name") + "_deleted"
+        )
+        os.chdir(cur_dir)
+
+
 def project_from_redis(self, pr_id):
 
-    # Get Collaborators
-    __col_list = json.loads(
-        self.rd_instance_pr.hgetall(
-            "projects:" + str(pr_id) + ":"
-        ).get("contributors")
-    )
+    # Get Info about project
+    __pr_info = self.rd_instance_pr.hgetall("p_" + str(pr_id))
 
-    # Delete project from redis
-    self.rd_instance_pr.delete("projects:" + str(pr_id) + ":")
-    self.rd_instance_pr.delete("projects:" + str(pr_id) + ":commits:")
+    # Move folder to deleted folder
+    project_to_filesystem(__pr_info)
 
-    # Delete all branches
-    __br = self.rd_instance_br("projects:" + str(pr_id) + ":*:commits:")
-    __br = map(lambda x: x.split(":")[3], __br)
-    for i in __br:
-        self.rd_instance_br.delete("projects:" + str(pr_id) + ":" + str(i) + ":")
-        self.rd_instance_br.delete("projects:" + str(pr_id) + ":" + str(i) + ":commits:")
-
-    # Delete all commits
-    __co = self.rd_instance_co("projects:" + str(pr_id) + ":*")
-    for i in __co:
-        self.rd_instance_co.delete(i)
-
-    for i in __col_list:
-
-        # Delete collaborator commits
-        self.rd_instance_usco.delete("users:" + str(i) + ":projects:" + str(pr_id) + ":commits:")
-
-        # Regenerate metadata of collaborator
-        __co_list = self.rd_instance_usco.keys("users:" + str(i) + ":*")
-        __us_info = self.rd_instance_us.hgetall("users:" + str(i) + ":")
-        if "first_commit_at" in __us_info:
-            __us_info["first_commit_at"] = 0
-        if "last_commit_at" in __us_info:
-            __us_info["last_commit_at"] = 0
-        for j in __co_list:
-            __start = self.rd_instance_usco.zrange(j, 0, 0, withscores=True)[1]
-            __end = self.rd_instance_usco.zrange(j, -1, -1, withscores=True)[1]
-            if __start < __us_info.get("first_commit_at"):
-                __us_info["first_commit_at"] = __start
-            if __end > __us_info.get("last_commit_at"):
-                __us_info["last_commit_at"] = __end
-        self.rd_instance_us.hmset("users:" + str(i) + ":", __us_info)
+    # Set flag to deleted
+    self.rd_instance_pr.hset("p_" + str(pr_id), "state", "deleted")
 
     # Print alert
     if config.DEBUGGER:
-        config.print_message("- Remove project %d " % int(pr_id))
+        config.print_message("- Removed Project %d " % int(pr_id))

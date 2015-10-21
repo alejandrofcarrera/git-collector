@@ -54,6 +54,8 @@ def non_user_to_redis(self, em_user):
 
 
 def group_to_redis(self, gr_id, gr_info):
+
+    # Set flag to active
     gr_info["state"] = "active"
     self.rd_instance_us.hmset("g_" + str(gr_id), gr_info)
 
@@ -143,7 +145,7 @@ def commits_to_redis(self, pr_id, pr_name):
             __co_info = j
 
             # Set values at Redis Structure (id + timestamp)
-            __co_br.append("p_" + str(pr_id) + ":" + __co_id)
+            __co_br.append(__co_id)
             __co_br.append(__co_info.get("created_at"))
 
             # Get email from commit
@@ -170,7 +172,7 @@ def commits_to_redis(self, pr_id, pr_name):
 
                 # Insert commit information
                 self.rd_instance_co.hmset(
-                    "p_" + str(pr_id) + ":" + __co_id, __co_info
+                    __co_id, __co_info
                 )
 
             # Save metadata for later (users info)
@@ -217,7 +219,7 @@ def commits_to_redis(self, pr_id, pr_name):
     # Create and inject Redis Data structure (same case like Branch)
     __co_pr = []
     for i in __info["commits"]:
-        __co_pr.append("p_" + str(pr_id) + ":" + i.get("id"))
+        __co_pr.append(i.get("id"))
         __co_pr.append(i.get("created_at"))
     inject.inject_project_commits(self.rd_instance_pr_co, pr_id, __co_pr)
 
@@ -250,7 +252,7 @@ def commits_to_redis(self, pr_id, pr_name):
         # Create and inject Redis Data structure (same case like Project or Branch)
         comm_un_project_user = []
         for j in __info["authors"][w]:
-            comm_un_project_user.append("p_" + str(pr_id) + ":" + j.get("id"))
+            comm_un_project_user.append(j.get("id"))
             comm_un_project_user.append(j.get('created_at'))
         inject.inject_user_commits(self.rd_instance_us_co, pr_id, w, comm_un_project_user)
 
