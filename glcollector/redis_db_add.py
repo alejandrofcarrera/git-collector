@@ -124,7 +124,8 @@ def commits_to_redis(self, pr_id, pr_name):
     # Object for project information
     __info = {
         "commits": {},
-        "authors": {}
+        "authors": {},
+        "authors_project": {}
     }
 
     # For through Branches
@@ -132,6 +133,7 @@ def commits_to_redis(self, pr_id, pr_name):
 
         # Data structure for branch's collaborators
         __br_info_collaborators = {}
+        __br_info_collaborators_all = {}
 
         # Create Redis Data structure (id + score, in this case timestamp)
         __co_br = []
@@ -153,22 +155,22 @@ def commits_to_redis(self, pr_id, pr_name):
             __co_em = __co_info.get('author_email').lower()
 
             # Detect if committer is not registered user
-            if __co_em not in __us_emails:
-                non_user_to_redis(self, str(__co_info.get("author_email")).lower())
-                __user_key = "nu_" + base64.b16encode(__co_em)
-
-            else:
-
-                # Get Redis ID and set author to commit info
-                collaborator_id = __us_emails[__co_em]
-                __user_key = str(collaborator_id)
+            collaborator_id = None
+            if __co_em in __us_emails:
+                collaborator_id = str(__us_emails[__co_em])
+            non_user_to_redis(self, __co_em)
+            __user_key = "nu_" + base64.b16encode(__co_em)
 
             # Detect unique repository commits (sha)
             # Also get extra info from git log and save commit
             if __co_id not in __info["commits"]:
 
                 parser.get_info_commit(pr_name, __co_info)
-                __co_info["author"] = __user_key
+
+                if collaborator_id is None:
+                    __co_info["author"] = __user_key
+                else:
+                    __co_info["author"] = collaborator_id
                 __info['commits'][__co_id] = __co_info
 
                 # Insert commit information
@@ -181,7 +183,18 @@ def commits_to_redis(self, pr_id, pr_name):
                 __info["authors"][__user_key] = {}
             if __co_id not in __info["authors"][__user_key]:
                 __info["authors"][__user_key][__co_id] = __co_info
-            __br_info_collaborators[__user_key] = '1'
+            __br_info_collaborators_all[__user_key] = '1'
+            if collaborator_id is not None:
+                if collaborator_id not in __info["authors"]:
+                    __info["authors"][collaborator_id] = {}
+                if __co_id not in __info["authors"][collaborator_id]:
+                    __info["authors"][collaborator_id][__co_id] = __co_info
+                __info["authors_project"][collaborator_id] = '1'
+                __br_info_collaborators[collaborator_id] = '1'
+                __br_info_collaborators_all[collaborator_id] = '1'
+            else:
+                __info["authors_project"][__user_key] = '1'
+                __br_info_collaborators[__user_key] = '1'
 
         # Inject commits to branch from data structure filled
         inject.inject_branch_commits(self.rd_instance_br_co, pr_id, base64.b16encode(i), __co_br)
@@ -193,7 +206,7 @@ def commits_to_redis(self, pr_id, pr_name):
         )
 
         # Insert relation between user and branch
-        for j in __br_info_collaborators.keys():
+        for j in __br_info_collaborators_all.keys():
             if not self.rd_instance_us_br.sismember(
                 j, "p_" + str(pr_id) + ":" + base64.b16encode(i)
             ):
@@ -227,7 +240,7 @@ def commits_to_redis(self, pr_id, pr_name):
     # Insert information to project
     self.rd_instance_pr.hset(
         "p_" + str(pr_id), 'contributors',
-        __info['authors'].keys()
+        __info['authors_project'].keys()
     )
     if len(__co_pr) > 0:
         self.rd_instance_pr.hset(
