@@ -191,7 +191,6 @@ def commits_to_redis(self, pr_id, pr_name):
                     __info["authors"][collaborator_id][__co_id] = __co_info
                 __info["authors_project"][collaborator_id] = '1'
                 __br_info_collaborators[collaborator_id] = '1'
-                __br_info_collaborators_all[collaborator_id] = '1'
             else:
                 __info["authors_project"][__user_key] = '1'
                 __br_info_collaborators[__user_key] = '1'
@@ -259,16 +258,19 @@ def commits_to_redis(self, pr_id, pr_name):
         __info["authors"][w] = __info["authors"][w].values()
         __info["authors"][w].sort(key=lambda x: x.get('created_at'), reverse=False)
 
-        # Insert relation between user and project
-        if not self.rd_instance_us_pr.sismember(w, "p_" + str(pr_id)):
-            self.rd_instance_us_pr.sadd(w, "p_" + str(pr_id))
+        if not w.startswith("u_"):
+
+            # Insert relation between user and project
+            if not self.rd_instance_us_pr.sismember(w, "p_" + str(pr_id)):
+                self.rd_instance_us_pr.sadd(w, "p_" + str(pr_id))
 
         # Create and inject Redis Data structure (same case like Project or Branch)
         comm_un_project_user = []
         for j in __info["authors"][w]:
             comm_un_project_user.append(j.get("id"))
             comm_un_project_user.append(j.get('created_at'))
-        inject.inject_user_commits(self.rd_instance_us_co, pr_id, w, comm_un_project_user)
+        if not w.startswith("u_"):
+            inject.inject_user_commits(self.rd_instance_us_co, pr_id, w, comm_un_project_user)
 
         # Insert information to user
         if len(comm_un_project_user) > 0:
