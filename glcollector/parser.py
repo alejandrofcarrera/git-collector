@@ -47,8 +47,6 @@ def join_users(user_one, user_two):
     for i in user_one.keys():
         if k_users[i] == "string" and str(user_one[i]) != str(user_two[i]):
             new_user[i] = user_one[i]
-            if i == "state" and str(user_one[i]) == "blocked":
-                new_user["gitlab_status"] = "blocked"
         elif k_users[i] == "int" and int(user_one[i]) != int(user_two[i]):
             new_user[i] = user_one[i]
         elif k_users[i] == "long" and long(user_one[i]) != long(user_two[i]):

@@ -32,6 +32,7 @@ __author__ = 'Alejandro F. Carrera'
 def user_to_redis(self, us_id, us_info):
 
     # Save user
+    us_info["state"] = "active"
     self.rd_instance_us.hmset("u_" + str(us_id), us_info)
 
     # Print alert
