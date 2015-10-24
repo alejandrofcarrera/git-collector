@@ -22,7 +22,6 @@
 import settings as config
 from dateutil import parser
 import commands, os, base64, re
-import json
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -39,9 +38,12 @@ def join_users(user_one, user_two):
         "name": "string",
         "avatar_url": "string",
         "state": "string",
+        "web_url": "string",
+        "primary_email": "string",
         "id": "int",
         "emails": "array",
-        "created_at": "long"
+        "created_at": "long",
+        "current_sign_in_at": "long"
     }
     new_user = {}
     for i in user_one.keys():
@@ -52,8 +54,8 @@ def join_users(user_one, user_two):
         elif k_users[i] == "long" and long(user_one[i]) != long(user_two[i]):
             new_user[i] = user_one[i]
         elif k_users[i] == "array":
-            a_user_one = json.loads(user_one[i])
-            b_user_one = json.loads(user_two[i])
+            a_user_one = eval(user_one[i])
+            b_user_one = eval(user_two[i])
             em_news = list(set(a_user_one).difference(set(b_user_one)))
             if len(em_news) > 0:
                 new_user[i] = a_user_one
@@ -61,6 +63,34 @@ def join_users(user_one, user_two):
             pass
     if len(new_user.keys()) > 0:
         return new_user
+    else:
+        return None
+
+
+def join_groups(group_one, group_two):
+    k_groups = {
+        "name": "string",
+        "path": "string",
+        "web_url": "string",
+        "id": "int",
+        "members": "array"
+    }
+    new_group = {}
+    for i in group_one.keys():
+        if k_groups[i] == "string" and str(group_one[i]) != str(group_two[i]):
+            new_group[i] = group_one[i]
+        elif k_groups[i] == "int" and int(group_one[i]) != int(group_two[i]):
+            new_group[i] = group_one[i]
+        elif k_groups[i] == "array":
+            a_user_one = eval(group_one[i])
+            b_user_one = eval(group_two[i])
+            em_news = list(set(a_user_one).difference(set(b_user_one)))
+            if len(em_news) > 0:
+                new_group[i] = a_user_one
+        else:
+            pass
+    if len(new_group.keys()) > 0:
+        return new_group
     else:
         return None
 
