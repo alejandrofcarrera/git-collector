@@ -57,7 +57,8 @@ def join_users(user_one, user_two):
             a_user_one = eval(user_one[i])
             b_user_one = eval(user_two[i])
             em_news = list(set(a_user_one).difference(set(b_user_one)))
-            if len(em_news) > 0:
+            em_deleted = list(set(b_user_one).difference(set(a_user_one)))
+            if len(em_news) > 0 or len(em_deleted) > 0:
                 new_user[i] = a_user_one
         else:
             pass
@@ -85,7 +86,8 @@ def join_groups(group_one, group_two):
             a_user_one = group_one[i]
             b_user_one = eval(group_two[i])
             em_news = list(set(a_user_one).difference(set(b_user_one)))
-            if len(em_news) > 0:
+            em_deleted = list(set(b_user_one).difference(set(a_user_one)))
+            if len(em_news) > 0 or len(em_deleted) > 0:
                 new_group[i] = a_user_one
         else:
             pass
