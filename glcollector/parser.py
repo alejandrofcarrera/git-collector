@@ -82,7 +82,7 @@ def join_groups(group_one, group_two):
         elif k_groups[i] == "int" and int(group_one[i]) != int(group_two[i]):
             new_group[i] = group_one[i]
         elif k_groups[i] == "array":
-            a_user_one = eval(group_one[i])
+            a_user_one = group_one[i]
             b_user_one = eval(group_two[i])
             em_news = list(set(a_user_one).difference(set(b_user_one)))
             if len(em_news) > 0:
