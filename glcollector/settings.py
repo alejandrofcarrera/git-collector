@@ -63,9 +63,9 @@ REDIS_DB_US = int(os.environ.get("COLL_REDIS_DB_USER", 3))
 # Redis Configuration (Relations)
 REDIS_DB_PR_CO = int(os.environ.get("COLL_REDIS_DB_PROJECT_COMMIT", 4))
 REDIS_DB_BR_CO = int(os.environ.get("COLL_REDIS_DB_BRANCH_COMMIT", 5))
-REDIS_DB_US_PR = int(os.environ.get("COLL_REDIS_DB_USER_PROJECT", 6))
-REDIS_DB_US_BR = int(os.environ.get("COLL_REDIS_DB_USER_BRANCH", 7))
-REDIS_DB_US_CO = int(os.environ.get("COLL_REDIS_DB_USER_COMMIT", 8))
+REDIS_DB_US_PR = int(os.environ.get("COLL_REDIS_DB_COMMITTER_PROJECT", 6))
+REDIS_DB_US_BR = int(os.environ.get("COLL_REDIS_DB_COMMITTER_BRANCH", 7))
+REDIS_DB_US_CO = int(os.environ.get("COLL_REDIS_DB_COMMITTER_COMMIT", 8))
 
 # Fields about User
 # http://doc.gitlab.com/ce/api/users.html#for-admin
