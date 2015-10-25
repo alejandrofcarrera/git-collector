@@ -97,9 +97,9 @@ def join_groups(group_one, group_two):
         return None
 
 
-def get_info_commit(pr_name, commit):
+def get_info_commit(pr_id, pr_name, commit):
     cur_dir = os.getcwd()
-    os.chdir(config.COLLECTOR_GIT_FOLDER + pr_name)
+    os.chdir(config.COLLECTOR_GIT_FOLDER + str(pr_id) + "_" + pr_name)
     __info_std = "git log --pretty=oneline --shortstat -1 " + commit.get("id")
     __info_std = commands.getoutput(__info_std)
     __p = re.search(r"\d+ file", __info_std)

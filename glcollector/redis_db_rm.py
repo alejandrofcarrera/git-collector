@@ -117,11 +117,14 @@ def group_from_redis(self, gr_id):
 
 def project_to_filesystem(pr_info):
     cur_dir = os.getcwd()
-    if os.path.exists(config.COLLECTOR_GIT_FOLDER + pr_info.get("name")):
+    if os.path.exists(config.COLLECTOR_GIT_FOLDER + str(pr_info.get("id")) +
+                      "_" + pr_info.get("name")):
         os.chdir(config.COLLECTOR_GIT_FOLDER)
         shutil.move(
-            config.COLLECTOR_GIT_FOLDER + pr_info.get("name"),
-            config.COLLECTOR_GIT_FOLDER + pr_info.get("name") + "_deleted"
+            config.COLLECTOR_GIT_FOLDER + str(pr_info.get("id")) +
+            "_" + pr_info.get("name"),
+            config.COLLECTOR_GIT_FOLDER + str(pr_info.get("id")) +
+            "_" + pr_info.get("name") + "_deleted"
         )
         os.chdir(cur_dir)
 

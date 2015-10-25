@@ -72,7 +72,8 @@ def project_to_filesystem(pr_info):
     if not os.path.exists(config.COLLECTOR_GIT_FOLDER + pr_info.get("name")):
         os.chdir(config.COLLECTOR_GIT_FOLDER)
         commands.getstatusoutput("git clone --mirror " +
-                                 pr_info.get("http_url_to_repo") + " " + pr_info.get("name"))
+                                 pr_info.get("http_url_to_repo") + " " +
+                                 str(pr_info.get("id")) + "_" + pr_info.get("name"))
         os.chdir(cur_dir)
 
         # Print alert
@@ -165,7 +166,7 @@ def commits_to_redis(self, pr_id, pr_name):
             # Also get extra info from git log and save commit
             if __co_id not in __info["commits"]:
 
-                parser.get_info_commit(pr_name, __co_info)
+                parser.get_info_commit(pr_id, pr_name, __co_info)
 
                 if collaborator_id is None:
                     __co_info["author"] = __user_key
