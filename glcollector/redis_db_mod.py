@@ -47,11 +47,12 @@ def projects_from_gitlab(self, pr_id, pr_info):
 
     # Detect different information from two projects
     __new_project = parser.join_projects(pr_info, pr_rd)
-
-    # Detect when last_activity_at has been modified
-    __flag = True if "last_activity_at" in __new_project else False
+    __flag = False
 
     if __new_project is not None:
+
+        # Detect when last_activity_at has been modified
+        __flag = True if "last_activity_at" in __new_project else False
 
         # Generate new project
         __new_project = pr_info
