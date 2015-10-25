@@ -27,6 +27,37 @@ __author__ = 'Alejandro F. Carrera'
 
 # Update Functions
 
+def projects_from_gitlab(self, pr_id, pr_info):
+
+    # Get info from redis
+    __p_id = "p_" + str(pr_id)
+    pr_rd = self.rd_instance_pr.hgetall(__p_id)
+
+    # Get extra infro from gitlab
+    if pr_info.get("owner") is None:
+        pr_info["owner"] = "g_" + str(pr_info.get("namespace").get("id"))
+    else:
+        pr_info["owner"] = "u_" + str(pr_info.get("owner").get("id"))
+    pr_info['tags'] = map(
+        lambda x: x.get("name").encode("ascii", "ignore"),
+        self.gl_instance.get_projects_repository_tags_byId(id=pr_id)
+    )
+    pr_info['state'] = 'archived' if pr_info['archived'] == 'true' else 'active'
+    del pr_info['archived']
+
+    # Detect different information from two projects
+    __new_project = parser.join_projects(pr_info, pr_rd)
+
+    if __new_project is not None:
+
+        # Generate new project
+        self.rd_instance_pr.hmset(__p_id, pr_info)
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message("- Updated Project %d" % int(pr_id))
+
+
 def contributors_from_user_to_user(rd, rd_d, user_one, user_two, preference):
     if preference is False:
         __pr = rd_d.smembers(user_one)

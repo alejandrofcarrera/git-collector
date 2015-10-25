@@ -68,6 +68,43 @@ def join_users(user_one, user_two):
         return None
 
 
+def join_projects(project_one, project_two):
+    k_projects = {
+        "name": "string",
+        "public": "string",
+        "owner": "string",
+        "http_url_to_repo": "string",
+        "default_branch": "string",
+        "web_url": "string",
+        "state": "string",
+        "id": "int",
+        "last_activity_at": "long",
+        "created_at": "long",
+        "tags": "array"
+    }
+    new_project = {}
+    for i in project_one.keys():
+        if k_projects[i] == "string" and str(project_one[i]) != str(project_two[i]):
+            new_project[i] = project_one[i]
+        elif k_projects[i] == "int" and int(project_one[i]) != int(project_two[i]):
+            new_project[i] = project_one[i]
+        elif k_projects[i] == "long" and long(project_one[i]) != long(project_two[i]):
+            new_project[i] = project_one[i]
+        elif k_projects[i] == "array":
+            a_user_one = project_one[i]
+            b_user_one = eval(project_two[i])
+            em_news = list(set(a_user_one).difference(set(b_user_one)))
+            em_deleted = list(set(b_user_one).difference(set(a_user_one)))
+            if len(em_news) > 0 or len(em_deleted) > 0:
+                new_project[i] = a_user_one
+        else:
+            pass
+    if len(new_project.keys()) > 0:
+        return new_project
+    else:
+        return None
+
+
 def join_groups(group_one, group_two):
     k_groups = {
         "name": "string",

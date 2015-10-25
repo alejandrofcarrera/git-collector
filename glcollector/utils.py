@@ -143,5 +143,7 @@ class Collector(object):
         for i in __mt_mod:
             if update == "users":
                 redis_db_mod.user_from_gitlab(self, i, __mt_gl[i])
-            if update == "groups":
+            elif update == "groups":
                 redis_db_mod.group_from_gitlab(self, i, __mt_gl[i])
+            elif update == "projects":
+                redis_db_mod.projects_from_gitlab(self, i, __mt_gl[i])
