@@ -146,4 +146,7 @@ class Collector(object):
             elif update == "groups":
                 redis_db_mod.group_from_gitlab(self, i, __mt_gl[i])
             elif update == "projects":
-                redis_db_mod.projects_from_gitlab(self, i, __mt_gl[i])
+                if redis_db_mod.projects_from_gitlab(self, i, __mt_gl[i]):
+
+                    # Detect changes at low level
+                    redis_db_mod.branches_from_gitlab(self, i)

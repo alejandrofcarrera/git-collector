@@ -48,14 +48,23 @@ def projects_from_gitlab(self, pr_id, pr_info):
     # Detect different information from two projects
     __new_project = parser.join_projects(pr_info, pr_rd)
 
+    # Detect when last_activity_at has been modified
+    __flag = True if "last_activity_at" in __new_project else False
+
     if __new_project is not None:
 
         # Generate new project
+        __new_project = pr_info
+        __new_project["contributors"] = pr_rd.get("contributors")
+        __new_project["first_commit_at"] = pr_rd.get("first_commit_at")
+        __new_project["last_commit_at"] = pr_rd.get("last_commit_at")
         self.rd_instance_pr.hmset(__p_id, pr_info)
 
         # Print alert
         if config.DEBUGGER:
             config.print_message("- Updated Project %d" % int(pr_id))
+
+    return __flag
 
 
 def contributors_from_user_to_user(rd, rd_d, user_one, user_two, preference):
