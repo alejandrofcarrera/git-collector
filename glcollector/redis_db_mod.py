@@ -33,7 +33,7 @@ def projects_from_gitlab(self, pr_id, pr_info):
     __p_id = "p_" + str(pr_id)
     pr_rd = self.rd_instance_pr.hgetall(__p_id)
 
-    # Get extra infro from gitlab
+    # Get extra info from gitlab
     if pr_info.get("owner") is None:
         pr_info["owner"] = "g_" + str(pr_info.get("namespace").get("id"))
     else:
