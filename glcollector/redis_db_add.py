@@ -105,8 +105,6 @@ def branches_to_redis(self, pr_id):
     if config.DEBUGGER:
         config.print_message("- Added %d Branches from project (%d)" % (len(__branches), int(pr_id)))
 
-    return __branches
-
 
 def commits_to_redis(self, pr_id, pr_name):
 
