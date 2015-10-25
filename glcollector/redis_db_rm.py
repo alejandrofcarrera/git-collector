@@ -43,100 +43,62 @@ def non_user_to_redis(self, em_user):
             config.print_message("- Detected and added Committer %s" % em_user)
 
 
+# Update Functions
+
+def contributors_from_user_to_user(rd, rd_d, user_one, user_two, preference):
+    if preference is False:
+        __pr = rd_d.smembers(user_one)
+    else:
+        __pr = rd_d.smembers(user_two)
+    for i in __pr:
+        __cont = eval(rd.hgetall(i).get("contributors"))
+        __flag = False
+        if user_one in __cont:
+            __cont.remove(user_one)
+            __flag = True
+        if user_two not in __cont:
+            __cont.append(user_two)
+            __flag = True
+        if __flag:
+            rd.hset(i, "contributors", __cont)
+
+
+def commits_from_user_to_user(rd, rd_d, user_one, user_two):
+    __pr = rd_d.keys(user_one + ":*")
+    for i in __pr:
+        [rd.hset(x, "author", user_two) for x in rd_d.zrange(i, 0, -1)]
+
+
 # Delete Functions
 
 def user_from_redis(self, us_id):
 
     # Delete user
-    __u_id_old = "u_" + str(us_id)
-    self.rd_instance_us.delete(__u_id_old)
-    self.rd_instance_us_pr.delete(__u_id_old)
+    __u_id = "u_" + str(us_id)
+    self.rd_instance_us.hset(__u_id, "state", "deleted")
+    rd_info = self.rd_instance_us.hgetall(__u_id)
 
-    # Get all commits linked to this user
-    __pr_us = self.rd_instance_us_co.keys(__u_id_old + ":*")
-    __pr_co = []
+    # Iterate over deleted emails
+    # Get list of emails to update info about user
+    __emails = eval(rd_info.get("emails"))
+    for i in __emails:
+        __co_em = "nu_" + base64.b16encode(i.lower())
+        if len(self.rd_instance_us.keys(__co_em)) > 0:
 
-    for i in __pr_us:
-        __pr_co += self.rd_instance_us_co.zrange(i, 0, -1)
-        self.rd_instance_us_co.delete(i)
+            # Pass information from old user (Projects)
+            contributors_from_user_to_user(
+                self.rd_instance_pr, self.rd_instance_us_pr, __u_id, __co_em, True
+            )
 
-    if len(__pr_us) > 0:
+            # Pass information from old user (Branches)
+            contributors_from_user_to_user(
+                self.rd_instance_br, self.rd_instance_us_br, __u_id, __co_em, True
+            )
 
-        __users = {}
-
-        for i in __pr_co:
-
-            # Get information about each commit
-            __pr_id = i.split(":")[0]
-            __co_info = self.rd_instance_co.hgetall(i)
-            __co_em = str(__co_info.get("author_email")).lower()
-            __co_em_b16 = base64.b16encode(__co_em)
-            __u_id_new = "nu_" + __co_em_b16
-
-            # Create new non user if he does not exist
-            non_user_to_redis(self, __co_em)
-            if __u_id_new not in __users:
-                __users[__u_id_new] = {
-                    'first_commit_at': 0,
-                    'last_commit_at': 0,
-                    'co_project': {},
-                    'co_ids': {},
-                    'branches': {}
-                }
-
-            # Linking between commits - projects - non user
-            if __pr_id not in __users[__u_id_new]["co_project"]:
-                __users[__u_id_new]["co_project"][__pr_id] = []
-            __users[__u_id_new]["co_project"][__pr_id].append(__pr_id + ":" + __co_info.get("id"))
-            __users[__u_id_new]["co_project"][__pr_id].append(__co_info.get("created_at"))
-            __users[__u_id_new]["co_ids"][__pr_id + ":" + __co_info.get("id")] = "1"
-
-            # Change information about author at each commit
-            self.rd_instance_co.hset(i, "author", __u_id_new)
-
-            # Create information about last/first commit
-            if __users[__u_id_new].get("first_commit_at") == 0 or \
-               __users[__u_id_new].get("first_commit_at") > __co_info.get("created_at"):
-                __users[__u_id_new]["first_commit_at"] = __co_info.get("created_at")
-                self.rd_instance_us.hset(__u_id_new, "first_commit_at", __co_info.get("created_at"))
-            if __users[__u_id_new].get("last_commit_at") == 0 or \
-               __users[__u_id_new].get("last_commit_at") < __co_info.get("created_at"):
-                __users[__u_id_new]["last_commit_at"] = __co_info.get("created_at")
-                self.rd_instance_us.hset(__u_id_new, "last_commit_at", __co_info.get("created_at"))
-
-        # Get and delete information about branches
-        __br = self.rd_instance_us_br.smembers(__u_id_old)
-        self.rd_instance_us_br.delete(__u_id_old)
-
-        # Add links between user and commits/projects
-        for i in __users.keys():
-            for j in __users[i]["co_project"].keys():
-                inject.inject_user_commits(
-                    self.rd_instance_us_co, j.replace("p_", ""), i, __users[i]["co_project"][j]
-                )
-                __cont = eval(self.rd_instance_pr.hgetall(j).get("contributors"))
-                if __u_id_old not in __cont:
-                    __cont.remove(__u_id_old)
-                if __u_id_new not in __cont:
-                    __cont.append(__u_id_new)
-                    self.rd_instance_pr.hset(j, "contributors", __cont)
-            self.rd_instance_us_pr.sadd(i, *__users[i]["co_project"].keys())
-
-            for j in __br:
-                __us_co = __users[i]["co_ids"].keys()
-                __br_co = self.rd_instance_br_co.zrange(j, 0, -1)
-                if len(set(__br_co).intersection(set(__us_co))) > 0:
-                    __cont = eval(self.rd_instance_br.hgetall(j).get("contributors"))
-                    if __u_id_old not in __cont:
-                        __cont.remove(__u_id_old)
-                    if __u_id_new not in __cont:
-                        __cont.append(__u_id_new)
-                        self.rd_instance_br.hset(j, "contributors", __cont)
-                    __users[i]["branches"][j] = "1"
-
-        # Add links between users and branches
-        for i in __users.keys():
-            self.rd_instance_us_br.sadd(i, *__users[i]["branches"].keys())
+            # Pass information from old user (Commits)
+            commits_from_user_to_user(
+                self.rd_instance_co, self.rd_instance_us_co, __u_id, __co_em
+            )
 
     # Print alert
     if config.DEBUGGER:
