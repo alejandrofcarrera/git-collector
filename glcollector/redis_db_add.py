@@ -69,7 +69,8 @@ def project_to_filesystem(pr_info):
     if not os.path.exists(config.COLLECTOR_GIT_FOLDER):
         os.makedirs(config.COLLECTOR_GIT_FOLDER)
     cur_dir = os.getcwd()
-    if not os.path.exists(config.COLLECTOR_GIT_FOLDER + pr_info.get("name")):
+    if not os.path.exists(config.COLLECTOR_GIT_FOLDER +
+                          str(pr_info.get("id")) + "_" + pr_info.get("name")):
         os.chdir(config.COLLECTOR_GIT_FOLDER)
         commands.getstatusoutput("git clone --mirror " +
                                  pr_info.get("http_url_to_repo") + " " +
