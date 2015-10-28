@@ -139,19 +139,26 @@ def get_info_commit(pr_id, pr_name, commit):
     os.chdir(config.COLLECTOR_GIT_FOLDER + str(pr_id) + "_" + pr_name)
     __info_std = "git log --pretty=oneline --shortstat -1 " + commit.get("id")
     __info_std = commands.getoutput(__info_std)
-    __p = re.search(r"\d+ file", __info_std)
-    if __p is None:
+    __p = re.compile(r"\d+ file")
+    __last = None
+    for m in __p.finditer(__info_std):
+        __last = m
+    if __last is None:
         commit["files_changed"] = 0
         commit["lines_added"] = 0
         commit["lines_removed"] = 0
     else:
-        __p = __p.start()
+        __p = m.start()
+        __info_temp = __info_std
         __info_std = __info_std[__p:]
         __info_std = __info_std.split(", ")
         if "files" not in __info_std[0]:
             commit["files_changed"] = int(__info_std[0].replace(" file changed", ""))
         else:
-            commit["files_changed"] = int(__info_std[0].replace(" files changed", ""))
+            try:
+                commit["files_changed"] = int(__info_std[0].replace(" files changed", ""))
+            except Exception as e:
+                pass
         if len(__info_std) > 1:
             if "insertion" in __info_std[1]:
                 if "insertions" not in __info_std[1]:
