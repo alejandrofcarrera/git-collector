@@ -89,7 +89,7 @@ GITLAB_REPO_FIELDS = [
     "first_commit_at", "contributors", "http_url_to_repo", "web_url",
     "owner", "id", "archived", "public", "description", "default_branch",
     "last_commit_at", "last_activity_at", "name", "created_at", "avatar_url",
-    "tags"
+    "tags", "namespace"
 ]
 
 # Fields about Branch
