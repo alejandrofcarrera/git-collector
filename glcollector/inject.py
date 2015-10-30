@@ -19,49 +19,84 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
+import base64
+
 __author__ = 'Alejandro F. Carrera'
 
 
-# Inject Functions
-
+# inject array of commits at branch db
+# rd = redis database with keys and relations (i.e rd_instance_br_co)
+# pr_id = project's id at gitlab
+# br_name = branch's name
+# commits = list of commits (hash + timestamp)
 def inject_branch_commits(rd, pr_id, br_name, commits):
+
+    # Generate pseudo-hash-id
+    __br_base64 = base64.b16encode(br_name)
+
+    # Generate project id
+    __pr_id = "p_" + str(pr_id)
+
+    # Generate key (project id + pseudo-hash-id)
+    __br_id = __pr_id + ":" + __br_base64
+
     commits_push = []
     c = 0
     for i in commits:
         if c == 10000:
-            rd.zadd("p_" + str(pr_id) + ":" + br_name, *commits_push)
+            rd.zadd(__br_id, *commits_push)
             commits_push = [i]
             c = 1
         else:
             commits_push.append(i)
             c += 1
-    rd.zadd("p_" + str(pr_id) + ":" + br_name, *commits_push)
+    rd.zadd(__br_id, *commits_push)
 
 
+# inject array of commits at project db
+# rd = redis database with keys and relations (i.e rd_instance_pr_co)
+# pr_id = project's id at gitlab
+# commits = list of commits (hash + timestamp)
 def inject_project_commits(rd, pr_id, commits):
+
+    # Generate project id
+    __pr_id = "p_" + str(pr_id)
+
     commits_push = []
     c = 0
     for i in commits:
         if c == 10000:
-            rd.zadd("p_" + str(pr_id), *commits_push)
+            rd.zadd(__pr_id, *commits_push)
             commits_push = [i]
             c = 1
         else:
             commits_push.append(i)
             c += 1
-    rd.zadd("p_" + str(pr_id), *commits_push)
+    rd.zadd(__pr_id, *commits_push)
 
 
-def inject_user_commits(rd, pr_id, user_id, commits):
+# inject array of commits at project db
+# rd = redis database with keys and relations (i.e rd_instance_pr_co)
+# pr_id = project's id at gitlab
+# user_key = committer|user key at redis
+# commits = list of commits (hash + timestamp)
+def inject_user_project_commits(rd, pr_id, user_key, commits):
+
+    # Generate project id
+    __pr_id = "p_" + str(pr_id)
+
+    # Generate key (user key + project id)
+    __us_id = user_key + ":" + __pr_id
+
     c = 0
     commits_push = []
     for i in commits:
         if c == 10000:
-            rd.zadd(user_id + ":p_" + str(pr_id), *commits_push)
+            rd.zadd(__us_id, *commits_push)
             commits_push = [i]
             c = 1
         else:
             commits_push.append(i)
             c += 1
-    rd.zadd(user_id + ":p_" + str(pr_id), *commits_push)
+    rd.zadd(__us_id, *commits_push)
 
