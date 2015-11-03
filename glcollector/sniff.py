@@ -20,7 +20,7 @@
 """
 
 import json
-import parser
+import st_clean
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -48,7 +48,7 @@ def get_keys_and_values_from_gitlab(self, key_str):
     if key_str == "projects":
         __mt = self.gl_instance.get_projects()
         for i in __mt:
-            parser.clean_info_project(i)
+            st_clean.project(i)
     elif key_str == "users":
         __mt = self.gl_instance.get_users()
         for i in __mt:
@@ -57,11 +57,11 @@ def get_keys_and_values_from_gitlab(self, key_str):
             for j in __em_lst:
                 i['emails'].append(j.get('email'))
             i['emails'] = json.dumps(i['emails'])
-            parser.clean_info_user(i)
+            st_clean.user(i)
     elif key_str == "groups":
         __mt = self.gl_instance.get_groups()
         for i in __mt:
-            parser.clean_info_group(i)
+            st_clean.group(i)
             i["members"] = []
             [i["members"].append(x.get("id")) for x in
              self.gl_instance.get_groups_members_byId(id=i.get("id"))]
