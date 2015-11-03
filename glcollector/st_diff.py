@@ -23,7 +23,7 @@ __author__ = 'Alejandro F. Carrera'
 
 
 # function that return structure with differences (users)
-def diff_users(user_one, user_two):
+def users(user_one, user_two):
     k_users = {
         "username": "string",
         "name": "string",
@@ -40,7 +40,7 @@ def diff_users(user_one, user_two):
 
 
 # function that return structure with differences (projects)
-def diff_projects(project_one, project_two):
+def projects(project_one, project_two):
     k_projects = {
         "name": "string",
         "public": "string",
@@ -58,7 +58,7 @@ def diff_projects(project_one, project_two):
 
 
 # function that return structure with differences (group)
-def diff_groups(group_one, group_two):
+def groups(group_one, group_two):
     k_groups = {
         "name": "string",
         "path": "string",

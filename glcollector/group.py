@@ -20,7 +20,7 @@
 """
 
 import settings as config
-import parser
+import st_diff
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -51,7 +51,7 @@ def save(self, gr_id, gr_info):
         gr_rd = self.rd_instance_us.hgetall(__g_id)
 
         # Detect different information from two groups
-        __new_group = parser.join_groups(gr_info, gr_rd)
+        __new_group = st_diff.groups(gr_info, gr_rd)
 
         if __new_group is not None:
 

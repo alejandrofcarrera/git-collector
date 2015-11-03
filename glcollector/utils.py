@@ -22,9 +22,11 @@
 import redis
 from glapi import GlAPI
 
+import user as util_user
+import group as util_group
+import project as util_project
 import settings as config
-import sniff, redis_db_add
-import redis_db_rm, redis_db_mod
+import sniff
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -105,48 +107,30 @@ class Collector(object):
         __mt_gl_id = __mt_gl.keys()
 
         # Generate difference and intersection metadata
-        __mt_new = list(set(__mt_gl_id).difference(set(__mt_rd_id)))
-        __mt_mod = list(set(__mt_gl_id).intersection(set(__mt_rd_id)))
+        __mt_diff = set(__mt_gl_id).difference(set(__mt_rd_id))
+        __mt_int = set(__mt_gl_id).intersection(set(__mt_rd_id))
+        __mt_mod = list(__mt_diff.union(__mt_int))
         __mt_del = list(set(__mt_rd_id).difference(set(__mt_gl_id)))
 
         # Print alert
         if config.DEBUGGER:
-            config.print_message("- %d new | %d deleted | %d possible updates" %
-                                 (len(__mt_new), len(__mt_del), len(__mt_mod)))
+            config.print_message("- New or possible updates: %d | Deleted: %d" %
+                                 (len(__mt_mod), len(__mt_del)))
 
-        # Insert New Information
-        for i in __mt_new:
+        # Insert / Modify Information
+        for i in __mt_mod:
             if update == "users":
-                __mt_pr_id = sniff.get_keys_from_redis(self, "projects")
-                if len(__mt_pr_id) > 0:
-                    redis_db_mod.user_to_redis_and_update(self, i, __mt_gl[i])
-                else:
-                    redis_db_add.user_to_redis(self, i, __mt_gl[i])
+                util_user.save(self, i, __mt_gl[i])
             elif update == "groups":
-                redis_db_add.group_to_redis(self, i, __mt_gl[i])
+                util_group.save(self, i, __mt_gl[i])
             elif update == "projects":
-                redis_db_add.project_to_filesystem(__mt_gl[i])
-                redis_db_add.project_to_redis(self, i, __mt_gl[i])
-                redis_db_add.branches_to_redis(self, i)
-                redis_db_add.commits_to_redis(self, i, __mt_gl[i].get("name"))
+                util_project.save(self, i, __mt_gl[i])
 
         # Delete Information
         for i in __mt_del:
             if update == "users":
-                redis_db_rm.user_from_redis(self, i)
+                util_user.delete(self, i)
             elif update == "groups":
-                redis_db_rm.group_from_redis(self, i)
+                util_group.delete(self, i)
             elif update == "projects":
-                redis_db_rm.project_from_redis(self, i)
-
-        # Update Projects
-        for i in __mt_mod:
-            if update == "users":
-                redis_db_mod.user_from_gitlab(self, i, __mt_gl[i])
-            elif update == "groups":
-                redis_db_mod.group_from_gitlab(self, i, __mt_gl[i])
-            elif update == "projects":
-                if redis_db_mod.projects_from_gitlab(self, i, __mt_gl[i]):
-
-                    # Detect changes at low level
-                    redis_db_mod.branches_from_gitlab(self, i)
+                util_project.delete(self, i)

@@ -21,7 +21,7 @@
 
 import base64
 import settings as config
-import parser
+import st_diff
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -52,7 +52,7 @@ def save(self, us_id, us_info):
         us_rd = self.rd_instance_us.hgetall("u_" + str(us_id))
 
         # Detect different information from two users
-        __new_user = parser.join_users(us_info, us_rd)
+        __new_user = st_diff.users(us_info, us_rd)
 
         if __new_user is not None:
 
