@@ -29,9 +29,17 @@ def get_keys_from_redis(self, key_str):
     __str = key_str[0] + "_"
     if key_str == "projects":
         __mt = self.rd_instance_pr.keys(__str + "*")
+        __mt_result = []
+        for i in __mt:
+            if not self.rd_instance_pr.hgetall(i).get("state") == "deleted":
+                __mt_result.append(i)
     else:
         __mt = self.rd_instance_us.keys(__str + "*")
-    return map(lambda x: int(x.replace(__str, "")), __mt)
+        __mt_result = []
+        for i in __mt:
+            if not self.rd_instance_us.hgetall(i).get("state") == "deleted":
+                __mt_result.append(i)
+    return map(lambda x: int(x.replace(__str, "")), __mt_result)
 
 
 def get_values_from_redis(self, key_str):
