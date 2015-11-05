@@ -49,7 +49,7 @@ def save(self, us_id, us_info):
     else:
 
         # Get info at redis
-        us_rd = self.rd_instance_us.hgetall("u_" + str(us_id))
+        us_rd = self.rd_instance_us.hgetall(__u_id)
 
         # Detect different information from two users
         __new_user = st_diff.users(us_info, us_rd)
@@ -92,35 +92,38 @@ def delete(self, us_id):
     # Generate pseudo-key-id
     __u_id = "u_" + str(us_id)
 
-    # Generate temp information and remove from db
-    rd_info = self.rd_instance_us.hgetall(__u_id)
-    self.rd_instance_us.delete(__u_id)
+    # Check user exists
+    if len(self.rd_instance_us.keys(__u_id)) > 0:
 
-    # Iterate over deleted emails
-    # Get list of emails to update info about user
-    __emails = eval(rd_info.get("emails"))
-    for i in __emails:
-        __co_em = "nu_" + base64.b16encode(i.lower())
-        if len(self.rd_instance_us.keys(__co_em)) > 0:
+        # Generate temp information and remove from db
+        rd_info = self.rd_instance_us.hgetall(__u_id)
+        self.rd_instance_us.delete(__u_id)
 
-            # Pass information from old user (Projects)
-            pass_contributors_between_users(
-                self.rd_instance_pr, self.rd_instance_us_pr, __u_id, __co_em, True
-            )
+        # Iterate over deleted emails
+        # Get list of emails to update info about user
+        __emails = eval(rd_info.get("emails"))
+        for i in __emails:
+            __co_em = "nu_" + base64.b16encode(i.lower())
+            if len(self.rd_instance_us.keys(__co_em)) > 0:
 
-            # Pass information from old user (Branches)
-            pass_contributors_between_users(
-                self.rd_instance_br, self.rd_instance_us_br, __u_id, __co_em, True
-            )
+                # Pass information from old user (Projects)
+                pass_contributors_between_users(
+                    self.rd_instance_pr, self.rd_instance_us_pr, __u_id, __co_em, True
+                )
 
-            # Pass information from old user (Commits)
-            pass_commits_between_users(
-                self.rd_instance_co, self.rd_instance_us_co, __u_id, __co_em
-            )
+                # Pass information from old user (Branches)
+                pass_contributors_between_users(
+                    self.rd_instance_br, self.rd_instance_us_br, __u_id, __co_em, True
+                )
 
-    # Print alert
-    if config.DEBUGGER:
-        config.print_message("- Removed User %d" % int(us_id))
+                # Pass information from old user (Commits)
+                pass_commits_between_users(
+                    self.rd_instance_co, self.rd_instance_us_co, __u_id, __co_em
+                )
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message("- Removed User %d" % int(us_id))
 
 
 # Add user (committer) to redis

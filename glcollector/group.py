@@ -70,9 +70,12 @@ def delete(self, gr_id):
     # Generate pseudo-key-id
     __g_id = "g_" + str(gr_id)
 
-    # Set flag to deleted
-    self.rd_instance_us.hset(__g_id, "state", "deleted")
+    # Check if group exists
+    if len(self.rd_instance_us.keys(__g_id)) > 0:
 
-    # Print alert
-    if config.DEBUGGER:
-        config.print_message("- Removed Group: %d" % int(gr_id))
+        # Set flag to deleted
+        self.rd_instance_us.hset(__g_id, "state", "deleted")
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message("- Removed Group: %d" % int(gr_id))
