@@ -80,8 +80,8 @@ def diff_structure(st_keys, st_one, st_two):
         elif st_keys[i] == "long" and long(st_one[i]) != long(st_two[i]):
             st_new[i] = st_one[i]
         elif st_keys[i] == "array":
-            a_st_one = eval(st_one[i])
-            b_st_one = eval(st_two[i])
+            a_st_one = st_one[i] if isinstance(st_one[i], list) else eval(st_one[i])
+            b_st_one = st_one[i] if isinstance(st_two[i], list) else eval(st_two[i])
             em_news = list(set(a_st_one).difference(set(b_st_one)))
             em_deleted = list(set(b_st_one).difference(set(a_st_one)))
             if len(em_news) > 0 or len(em_deleted) > 0:
