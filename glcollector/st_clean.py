@@ -25,6 +25,7 @@ import base64
 
 __author__ = 'Alejandro F. Carrera'
 
+# keys for transform date to long
 str_time_keys = [
     'created_at', 'updated_at', 'last_activity_at',
     'due_date', 'authored_date', 'committed_date',
@@ -32,6 +33,7 @@ str_time_keys = [
 ]
 
 
+# function that clean structure (user)
 def user(o):
     for k in o.keys():
         if k not in config.GITLAB_USER_FIELDS:
@@ -47,6 +49,7 @@ def user(o):
             pass
 
 
+# function that clean structure (group)
 def group(o):
     for k in o.keys():
         if k not in config.GITLAB_GROUP_FIELDS:
@@ -57,6 +60,7 @@ def group(o):
             pass
 
 
+# function that clean structure (project)
 def project(o):
     for k in o.keys():
         if k not in config.GITLAB_REPO_FIELDS:
@@ -73,6 +77,7 @@ def project(o):
             pass
 
 
+# function that clean structure (branch)
 def branch(o):
     for k in o.keys():
         if k not in config.GITLAB_BRANCH_FIELDS:
@@ -87,6 +92,7 @@ def branch(o):
             pass
 
 
+# function that clean structure (commit)
 def commit(o):
     for k in o.keys():
         if o[k] is None or o[k] == '' or o[k] == "null":
