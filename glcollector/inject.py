@@ -40,6 +40,10 @@ def inject_branch_commits(rd, pr_id, br_name, commits):
     # Generate key (project id + pseudo-hash-id)
     __br_id = __pr_id + ":" + __br_base64
 
+    # Delete old values
+    if len(rd.keys(__br_id)) > 0:
+        rd.delete(__br_id)
+
     commits_push = []
     c = 0
     for i in commits:
@@ -61,6 +65,10 @@ def inject_project_commits(rd, pr_id, commits):
 
     # Generate project id
     __pr_id = "p_" + str(pr_id)
+
+    # Delete old values
+    if len(rd.keys(__pr_id)) > 0:
+        rd.delete(__pr_id)
 
     commits_push = []
     c = 0
@@ -88,6 +96,10 @@ def inject_user_project_commits(rd, pr_id, user_key, commits):
     # Generate key (user key + project id)
     __us_id = user_key + ":" + __pr_id
 
+    # Delete old values
+    if len(rd.keys(__us_id)) > 0:
+        rd.delete(__us_id)
+
     c = 0
     commits_push = []
     for i in commits:
@@ -99,4 +111,3 @@ def inject_user_project_commits(rd, pr_id, user_key, commits):
             commits_push.append(i)
             c += 1
     rd.zadd(__us_id, *commits_push)
-

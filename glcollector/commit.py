@@ -194,8 +194,6 @@ def update(self, pr_id, pr_name, pr_info, br_name):
         __br_info_collaborators[__user_key] = '1'
 
     # Inject commits to branch from data structure filled
-    if len(self.rd_instance_br_co.keys(__br_id)) > 0:
-        self.rd_instance_br_co.delete(__br_id)
     inject.inject_branch_commits(self.rd_instance_br_co, pr_id, base64.b16encode(br_name), __co_br)
 
     # Insert information to branch
