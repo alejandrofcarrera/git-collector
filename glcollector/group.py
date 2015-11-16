@@ -74,7 +74,7 @@ def delete(self, gr_id):
     if len(self.rd_instance_us.keys(__g_id)) > 0:
 
         # Set flag to deleted
-        self.rd_instance_us.hset(__g_id, "state", "deleted")
+        self.rd_instance_us.delete(__g_id)
 
         # Print alert
         if config.DEBUGGER:
