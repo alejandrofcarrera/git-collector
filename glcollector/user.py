@@ -82,21 +82,3 @@ def delete(self, us_id):
         # Print alert
         if config.DEBUGGER:
             config.print_message("- Removed User %d" % int(us_id))
-
-
-# Add user (committer) to redis
-# em_user = committer email
-def save_committer(self, em_user):
-
-    # Generate pseudo-hash-id
-    __em_b16 = "nu_" + base64.b16encode(em_user)
-
-    # Check if user email exists at non gitlab users
-    if len(self.rd_instance_us.keys(__em_b16)) == 0:
-
-        # Save committer
-        self.rd_instance_us.hset(__em_b16, "primary_email", em_user)
-
-        # Print alert
-        if config.DEBUGGER:
-            config.print_message("- Detected and added Committer: %s" % em_user)
