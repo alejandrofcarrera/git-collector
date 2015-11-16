@@ -53,7 +53,7 @@ class Collector(object):
 
     Attributes:
         gl_instance (GitLab): GitLab object
-        rd_instance (Redis): Redis object
+        rd_instance_* (Redis): Redis object link with DB
     """
 
     def __init__(self):
@@ -62,10 +62,7 @@ class Collector(object):
         self.rd_instance_br = None
         self.rd_instance_co = None
         self.rd_instance_us = None
-        self.rd_instance_pr_co = None
         self.rd_instance_br_co = None
-        self.rd_instance_us_pr = None
-        self.rd_instance_us_br = None
         self.rd_instance_us_co = None
         try:
             self.gl_connect()
@@ -90,17 +87,12 @@ class Collector(object):
             self.rd_instance_br = redis_create_pool(config.REDIS_DB_BR)
             self.rd_instance_co = redis_create_pool(config.REDIS_DB_CO)
             self.rd_instance_us = redis_create_pool(config.REDIS_DB_US)
-            self.rd_instance_pr_co = redis_create_pool(config.REDIS_DB_PR_CO)
             self.rd_instance_br_co = redis_create_pool(config.REDIS_DB_BR_CO)
-            self.rd_instance_us_pr = redis_create_pool(config.REDIS_DB_US_PR)
-            self.rd_instance_us_br = redis_create_pool(config.REDIS_DB_US_BR)
             self.rd_instance_us_co = redis_create_pool(config.REDIS_DB_US_CO)
         except EnvironmentError as e:
             raise e
 
     def update_information(self, update):
-
-        config.print_message("* Updating %s ..." % update)
 
         __mt_gl = sniff.get_keys_and_values_from_gitlab(self, update)
         __mt_rd_id = sniff.get_keys_from_redis(self, update)
@@ -114,8 +106,8 @@ class Collector(object):
 
         # Print alert
         if config.DEBUGGER:
-            config.print_message("- New or possible updates: %d | Deleted: %d" %
-                                 (len(__mt_mod), len(__mt_del)))
+            config.print_message("- [ %s ] New or possible updates: %d | Deleted: %d" %
+                                 (update, len(__mt_mod), len(__mt_del)))
 
         # Insert / Modify Information
         for i in __mt_mod:
