@@ -71,7 +71,7 @@ def get_keys_and_values_from_gitlab(self, key_str):
         for i in __mt:
             st_clean.group(i)
             i["members"] = []
-            [i["members"].append(x.get("id")) for x in
+            [i["members"].append("u_" + str(x.get("id"))) for x in
              self.gl_instance.get_groups_members_byId(id=i.get("id"))]
     __mt_id = map(lambda w: int(w.get('id')), __mt)
     return dict(zip(__mt_id, __mt))
