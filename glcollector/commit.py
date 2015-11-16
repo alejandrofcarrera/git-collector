@@ -100,16 +100,15 @@ def get_commit_info(pr_id, pr_name, commit):
 # Add/Remove branch's commits information
 # pr_id = project identifier at gitlab
 # pr_name = name of project
-# pr_info = project information obtained from gitlab
 # br_name = branch's name
-def update(self, pr_id, pr_name, pr_info, br_name):
+def update(self, pr_id, pr_name, br_name):
 
     # Generate pseudo-key-id
     __pr_id = "p_" + str(pr_id)
     __br_id = __pr_id + ":" + base64.b16encode(br_name)
 
     # Data structure for branch's collaborators
-    __br_info_collaborators = {}
+    __br_info_collaborators = set()
 
     # Create Redis Data structure (id + score, in this case timestamp)
     __co_br = []
@@ -123,28 +122,24 @@ def update(self, pr_id, pr_name, pr_info, br_name):
     __co_rd_id = []
     __co_rd_val = {}
     if len(self.rd_instance_br_co.keys(__br_id)) > 0:
-        __co_rd_tmp = self.rd_instance_br_co.zrange(__br_id, 0, -1, withscores=True)
-        __co_rd_val = dict(zip(__co_rd_tmp[::2], __co_rd_tmp[1::2]))
+        __br_info_collaborators = set(eval(
+            self.rd_instance_br.hgetall(__br_id).get("contributors")
+        ))
+        __co_rd_val = dict(self.rd_instance_br_co.zrange(__br_id, 0, -1, withscores=True))
         __co_rd_id = __co_rd_val.keys()
 
     # Generate difference and intersection metadata
     __mt_new = list(set(__co_gl_id).difference(set(__co_rd_id)))
-    __mt_mod = list(set(__co_gl_id).intersection(set(__co_rd_id)))
     __mt_del = list(set(__co_rd_id).difference(set(__co_gl_id)))
+    __mt_int = set(__co_gl_id).intersection(set(__co_rd_id))
+    __mt_mod = list(set(__mt_new).union(__mt_int))
+
+    # Fill branch's commits without deleted
+    [__co_br.extend([i, long(__co_rd_val[i])]) for i in __mt_mod]
 
     # Regenerate structure of branch
     if len(__mt_new) > 0 or len(__mt_del) > 0:
         self.rd_instance_br_co.delete(__br_id)
-    if len(__mt_del) > 0:
-        __mt_keys_tmp = __co_rd_val.keys() - __mt_del
-        for i in __mt_keys_tmp:
-            __co_br.append(__co_rd_val[i])
-            __co_br.append(__co_rd_val[i].get("created_at"))
-
-    # Get all unique commits from repository (redis)
-    __co_rd_pr = {}
-    if len(self.rd_instance_pr_co.keys(__pr_id)) > 0:
-        __co_rd_pr = dict(zip(self.rd_instance_pr_co.zrange(__pr_id, 0, -1), '1'))
 
     # Update or add commits to redis
     for i in __mt_new:
@@ -152,10 +147,24 @@ def update(self, pr_id, pr_name, pr_info, br_name):
         # Get commit identifier (sha) + info
         __co_id = i
 
+        # Get email from commit and add as contributor
+        __co_em = __co_gl_val[i].get('author_email').lower()
+        __user_key = "nu_" + base64.b16encode(__co_em)
+        self.rd_instance_us_co.sadd(__user_key, __br_id + ":" + __co_id)
+        __br_info_collaborators.add(__user_key)
+
         # Get information from gitlab or redis
-        if __co_id not in __co_rd_pr:
+        if len(self.rd_instance_co.keys(__co_id)) == 0:
             __co_info = __co_gl_val[i]
             st_clean.commit(__co_info)
+
+            # Get commit information from git log
+            get_commit_info(pr_id, pr_name, __co_info)
+            __co_info["author"] = "nu_" + base64.b16encode(__co_em)
+
+            # Insert commit information
+            self.rd_instance_co.hmset(__co_id, __co_info)
+
         else:
             __co_info = self.rd_instance_co.hgetall(__co_id)
 
@@ -163,66 +172,46 @@ def update(self, pr_id, pr_name, pr_info, br_name):
         __co_br.append(__co_id)
         __co_br.append(long(__co_info.get("created_at")))
 
-        # Get email from commit
+    for i in __mt_del:
+
+        # Get commit identifier (sha) + info
+        __co_id = i
+        __co_info = self.rd_instance_co.hgetall(__co_id)
+
+        # Get email from commit and add as contributor
         __co_em = __co_info.get('author_email').lower()
-
-        # Save new committer if it is not exist
-        util_user.save_committer(self, __co_em)
         __user_key = "nu_" + base64.b16encode(__co_em)
+        self.rd_instance_us_co.srem(__user_key, __br_id + ":" + __co_id)
 
-        # Detect unique repository commits (sha)
-        # Also get extra info from git log and save commit
-        if __co_id not in __co_rd_pr:
-
-            get_commit_info(pr_id, pr_name, __co_info)
-            __co_info["author"] = __user_key
-
-            # Insert commit information
-            self.rd_instance_co.hmset(
-                __co_id, __co_info
-            )
-
-        # Save unique commit
-        if __co_id not in pr_info['commits']:
-            pr_info['commits'][__co_id] = __co_info
-
-        # Save metadata for later (users info)
-        if __user_key not in pr_info["authors"]:
-            pr_info["authors"][__user_key] = {}
-        if __co_id not in pr_info["authors"][__user_key]:
-            pr_info["authors"][__user_key][__co_id] = __co_info
-        __br_info_collaborators[__user_key] = '1'
+    # Check if contributors keep being same
+    if len(__mt_del) > 0:
+        __br_info_collaborators_tmp = __br_info_collaborators.copy()
+        for i in __br_info_collaborators:
+            count_co = 0
+            __br_us_co = self.rd_instance_us_co.smembers(i)
+            for j in __br_us_co:
+                if str(j).startswith(__br_id):
+                    count_co = 1
+                    break
+            if count_co == 0:
+                __br_info_collaborators_tmp.remove(i)
+        __br_info_collaborators = __br_info_collaborators_tmp
 
     # Inject commits to branch from data structure filled
-    inject.inject_branch_commits(self.rd_instance_br_co, pr_id, base64.b16encode(br_name), __co_br)
+    if len(__mt_new) > 0 or len(__mt_del) > 0:
+        inject.inject_branch_commits(self.rd_instance_br_co, pr_id, br_name, __co_br)
 
     # Insert information to branch
-    self.rd_instance_br.hset(__br_id, 'contributors', __br_info_collaborators.keys())
-
-    # Add link between contributor and branch if it is not exist
-    for i in __br_info_collaborators.keys():
-        if not self.rd_instance_us_br.sismember(i, __br_id):
-            self.rd_instance_us_br.sadd(i, __br_id)
-
-    # Sort Branch's commits by timestamp
-    __co = []
-    [__co.append({
-        'id': __co_gl_val[i].get('id'),
-        'created_at': __co_gl_val[i].get('created_at')
-    }) for i in __mt_new]
-    [__co.append({
-        'id': i,
-        'created_at': self.rd_instance_co.hgetall(i).get('created_at')
-    }) for i in __mt_mod]
-    __co.sort(key=lambda j: j.get('created_at'), reverse=False)
-
-    # Add Branch's metadata
-    if len(__co) > 0:
-        self.rd_instance_br.hset(__br_id, 'created_at', __co[0].get('created_at'))
-        self.rd_instance_br.hset(__br_id, 'last_commit', __co[-1].get('id'))
+    self.rd_instance_br.hset(__br_id, 'contributors', list(__br_info_collaborators))
 
     if len(__mt_new) > 0:
 
         # Print alert
         if config.DEBUGGER:
             config.print_message("* (%d) Added %s: %d Commits" % (int(pr_id), br_name, len(__mt_new)))
+
+    if len(__mt_del) > 0:
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message("* (%d) Deleted %s: %d Commits" % (int(pr_id), br_name, len(__mt_del)))
