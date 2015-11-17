@@ -21,19 +21,17 @@
 
 import datetime
 import time
+import threading
 
 from glcollector import settings as config
 from glcollector import utils
 
 __author__ = 'Alejandro F. Carrera'
 
-# MAIN
-
-if __name__ == '__main__':
-
+def execute_collector():
+    threading.Timer(config.DELAY, execute_collector).start()
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     config.print_message("* %s (%s) Started - %s" % (config.LONGNAME, config.VERSION, st))
-
     # Create Object Collector
     try:
         __collector = utils.Collector()
@@ -42,6 +40,12 @@ if __name__ == '__main__':
         __collector.update_information("projects")
     except EnvironmentError as e:
         config.print_error(e.message)
-
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     config.print_message("* %s (%s) Finished - %s" % (config.LONGNAME, config.VERSION, st))
+
+
+# MAIN
+
+if __name__ == '__main__':
+
+    execute_collector()

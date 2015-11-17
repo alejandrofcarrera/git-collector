@@ -26,9 +26,10 @@ __author__ = 'Alejandro F. Carrera'
 
 # Collector Package Configuration
 NAME = "gl-collector"
-VERSION = "0.2.0"
+VERSION = "1.0.0"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
+DELAY = 60 * 60 * 3
 
 # Collector Hook Configuration to get changes from Gitlab
 COLLECTOR_WEBHOOK_IP = os.environ.get("COLL_WEBHOOK_IP", "10.0.2.2")
@@ -43,16 +44,16 @@ COLLECTOR_GIT_FOLDER = "/tmp/gl-collector/"
 
 # Gitlab Configuration to get data
 GITLAB_PROT = os.environ.get("COLL_GITLAB_PROT", "http")
-GITLAB_IP = os.environ.get("COLL_GITLAB_IP", "vps164.cesvima.upm.es")
-GITLAB_PORT = int(os.environ.get("COLL_GITLAB_PORT", 80))
+GITLAB_IP = os.environ.get("COLL_GITLAB_IP", "127.0.0.1")
+GITLAB_PORT = int(os.environ.get("COLL_GITLAB_PORT", 8000))
 GITLAB_USER = os.environ.get("COLL_GITLAB_USER", "root")
-GITLAB_PASS = os.environ.get("COLL_GITLAB_PASS", "123456sdh")
+GITLAB_PASS = os.environ.get("COLL_GITLAB_PASS", "12345678")
 GITLAB_VER_SSL = bool(os.environ.get("COLL_GITLAB_VERIFY_SSL", False))
 
 # Redis Configuration to set data
 REDIS_IP = os.environ.get("COLL_REDIS_IP", "127.0.0.1")
 REDIS_PORT = int(os.environ.get("COLL_REDIS_PORT", 6379))
-REDIS_PASS = os.environ.get("COLL_REDIS_PASS", "gitlab-colenh")
+REDIS_PASS = os.environ.get("COLL_REDIS_PASS", None)
 
 # Redis Configuration (Main Entities)
 REDIS_DB_PR = int(os.environ.get("COLL_REDIS_DB_PROJECT", 0))
@@ -61,11 +62,8 @@ REDIS_DB_CO = int(os.environ.get("COLL_REDIS_DB_COMMIT", 2))
 REDIS_DB_US = int(os.environ.get("COLL_REDIS_DB_USER", 3))
 
 # Redis Configuration (Relations)
-REDIS_DB_PR_CO = int(os.environ.get("COLL_REDIS_DB_PROJECT_COMMIT", 4))
-REDIS_DB_BR_CO = int(os.environ.get("COLL_REDIS_DB_BRANCH_COMMIT", 5))
-REDIS_DB_US_PR = int(os.environ.get("COLL_REDIS_DB_COMMITTER_PROJECT", 6))
-REDIS_DB_US_BR = int(os.environ.get("COLL_REDIS_DB_COMMITTER_BRANCH", 7))
-REDIS_DB_US_CO = int(os.environ.get("COLL_REDIS_DB_COMMITTER_COMMIT", 8))
+REDIS_DB_BR_CO = int(os.environ.get("COLL_REDIS_DB_BRANCH_COMMIT", 4))
+REDIS_DB_US_CO = int(os.environ.get("COLL_REDIS_DB_COMMITTER_COMMIT", 5))
 
 # Fields about User
 # http://doc.gitlab.com/ce/api/users.html#for-admin
