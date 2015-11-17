@@ -71,9 +71,6 @@ def save(self, pr_id, pr_info):
         if config.DEBUGGER:
             config.print_message("- Added Project: %d" % int(pr_id))
 
-        # Insert information
-        save_code(self, pr_id, pr_info.get("name"))
-
     # Project exists at redis
     else:
 
@@ -86,9 +83,6 @@ def save(self, pr_id, pr_info):
 
         if __new_project is not None:
 
-            # Detect when last_activity_at has been modified
-            __flag = True if "last_activity_at" in __new_project else False
-
             # Generate new project
             self.rd_instance_pr.hmset(__p_id, pr_info)
 
@@ -96,11 +90,8 @@ def save(self, pr_id, pr_info):
             if config.DEBUGGER:
                 config.print_message("- Updated Project: %d" % int(pr_id))
 
-        # Project has changes at branches, commits, metadata ...
-        if __flag:
-
-            # Update information
-            save_code(self, pr_id, pr_info.get("name"))
+    # Project has changes at branches, commits, metadata ...
+    save_code(self, pr_id, pr_info.get("name"))
 
 
 def save_code(self, pr_id, pr_name):

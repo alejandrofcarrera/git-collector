@@ -121,7 +121,9 @@ def update(self, pr_id, pr_name, br_name):
     # Get all commits from specific branch (redis) ids + created_at
     __co_rd_id = []
     __co_rd_val = {}
-    if len(self.rd_instance_br_co.keys(__br_id)) > 0:
+
+    __prev_info = len(self.rd_instance_br_co.keys(__br_id)) > 0
+    if __prev_info:
         __br_info_collaborators = set(eval(
             self.rd_instance_br.hgetall(__br_id).get("contributors")
         ))
@@ -131,11 +133,11 @@ def update(self, pr_id, pr_name, br_name):
     # Generate difference and intersection metadata
     __mt_new = list(set(__co_gl_id).difference(set(__co_rd_id)))
     __mt_del = list(set(__co_rd_id).difference(set(__co_gl_id)))
-    __mt_int = set(__co_gl_id).intersection(set(__co_rd_id))
-    __mt_mod = list(set(__mt_new).union(__mt_int))
+    __mt_mod = list(set(__co_gl_id).intersection(set(__co_rd_id)))
 
     # Fill branch's commits without deleted
-    [__co_br.extend([i, long(__co_rd_val[i])]) for i in __mt_mod]
+    if __prev_info:
+        [__co_br.extend([i, long(__co_rd_val[i])]) for i in __mt_mod]
 
     # Regenerate structure of branch
     if len(__mt_new) > 0 or len(__mt_del) > 0:
