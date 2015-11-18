@@ -25,7 +25,6 @@ import st_clean
 import st_diff
 import commands
 import base64
-import inject
 import shutil
 import os
 
@@ -79,7 +78,6 @@ def save(self, pr_id, pr_info):
 
         # Detect different information from two projects
         __new_project = st_diff.projects(pr_info, pr_rd)
-        __flag = False
 
         if __new_project is not None:
 
@@ -119,6 +117,9 @@ def save_code(self, pr_id, pr_name):
     __mt_mod = list(__mt_diff.union(__mt_int))
     __mt_del = list(set(__branches_rd_info.keys()).difference(set(__branches_gl_info.keys())))
 
+    # Structure for removed commits
+    __mt_del_commits = set()
+
     # Delete information about Branch
     count = 0
     for i in __mt_del:
@@ -146,8 +147,21 @@ def save_code(self, pr_id, pr_name):
             __us_com = self.rd_instance_us_co.smembers(j)
             for x in __us_com:
                 if str(x).startswith(__br_id):
+                    __mt_del_commits.add(str(x).split(":")[0] + ":" + str(x).split(":")[2])
                     self.rd_instance_us_co.srem(j, x)
 
+    # Remove all unique commits
+    if len(__mt_del_commits) > 0:
+        __rd_branch_co = set()
+        __rd_branch = self.rd_instance_br.keys(__p_id + "*")
+        for i in __rd_branch:
+            __rd_branch_co = __rd_branch_co.union(
+                set(dict(self.rd_instance_br_co.zrange(i, 0, -1)).keys())
+            )
+        for i in __mt_del_commits:
+            if i not in __rd_branch_co:
+                self.rd_instance_co.delete(i)
+            
     # Update information about Branch
     count = 0
     for i in __mt_mod:
