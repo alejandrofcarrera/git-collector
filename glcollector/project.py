@@ -120,7 +120,17 @@ def save_code(self, pr_id, pr_name):
     __mt_del = list(set(__branches_rd_info.keys()).difference(set(__branches_gl_info.keys())))
 
     # Delete information about Branch
+    count = 0
     for i in __mt_del:
+
+        # Number of deleted branches
+        count += 1
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message(
+                "* (%d) [%d/%d] Deleted %s" %(int(pr_id), count, len(__mt_del), i)
+            )
 
         # Get information from redis
         __br_info = __branches_rd_info[i]
@@ -139,7 +149,17 @@ def save_code(self, pr_id, pr_name):
                     self.rd_instance_us_co.srem(j, x)
 
     # Update information about Branch
+    count = 0
     for i in __mt_mod:
+
+        # Number of reviewed branches
+        count += 1
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message(
+                "* (%d) [%d/%d] Reviewed %s" %(int(pr_id), count, len(__mt_mod), i)
+            )
 
         # Clean information
         __br_info = __branches_gl_info[i]

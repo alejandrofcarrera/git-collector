@@ -210,10 +210,10 @@ def update(self, pr_id, pr_name, br_name):
 
         # Print alert
         if config.DEBUGGER:
-            config.print_message("* (%d) Added %s: %d Commits" % (int(pr_id), br_name, len(__mt_new)))
+            config.print_message("* (%d) Added %d Commits" % (int(pr_id), len(__mt_new)))
 
     if len(__mt_del) > 0:
 
         # Print alert
         if config.DEBUGGER:
-            config.print_message("* (%d) Deleted %s: %d Commits" % (int(pr_id), br_name, len(__mt_del)))
+            config.print_message("* (%d) Deleted %d Commits" % (int(pr_id), len(__mt_del)))
