@@ -20,7 +20,6 @@
 """
 
 import settings as config
-import user as util_user
 import st_clean
 import commands
 import base64
@@ -151,8 +150,7 @@ def update(self, pr_id, pr_name, br_name):
 
         # Get email from commit and add as contributor
         __co_em = __co_gl_val[i].get('author_email').lower()
-        __user_key = "nu_" + base64.b16encode(__co_em)
-        self.rd_instance_us_co.sadd(__user_key, __br_id + ":" + __co_id)
+        __user_key = base64.b16encode(__co_em)
         __br_info_collaborators.add(__user_key)
 
         # Get information from gitlab or redis
@@ -162,16 +160,19 @@ def update(self, pr_id, pr_name, br_name):
 
             # Get commit information from git log
             get_commit_info(pr_id, pr_name, __co_info)
-            __co_info["author"] = "nu_" + base64.b16encode(__co_em)
+            __co_info["author"] = __user_key
 
             # Insert commit information
-            self.rd_instance_co.hmset(__co_id, __co_info)
+            self.rd_instance_co.hmset(__pr_id + ":" + __co_id, __co_info)
 
         else:
             __co_info = self.rd_instance_co.hgetall(__co_id)
 
-        # Set values at Redis Structure (id + timestamp)
-        __co_br.append(__co_id)
+        # Set values at Redis Structure - User
+        self.rd_instance_us_co.zadd(__user_key, __br_id + ":" + __co_id, long(__co_info.get("created_at")))
+
+        # Set values at Redis Structure - Branch (id + timestamp)
+        __co_br.append(__pr_id + ":" + __co_id)
         __co_br.append(long(__co_info.get("created_at")))
 
     for i in __mt_del:
@@ -182,8 +183,8 @@ def update(self, pr_id, pr_name, br_name):
 
         # Get email from commit and add as contributor
         __co_em = __co_info.get('author_email').lower()
-        __user_key = "nu_" + base64.b16encode(__co_em)
-        self.rd_instance_us_co.srem(__user_key, __br_id + ":" + __co_id)
+        __user_key = base64.b16encode(__co_em)
+        self.rd_instance_us_co.zrem(__user_key, __br_id + ":" + __co_id)
 
     # Check if contributors keep being same
     if len(__mt_del) > 0:
