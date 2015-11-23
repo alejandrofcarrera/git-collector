@@ -29,7 +29,7 @@ NAME = "gl-collector"
 VERSION = "1.0.0"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
-DELAY = 60 * 60 * 3
+DELAY = os.environ.get("COLL_DELAY", 60 * 60 * 3)
 
 # Collector Hook Configuration to get changes from Gitlab
 COLLECTOR_WEBHOOK_IP = os.environ.get("COLL_WEBHOOK_IP", "10.0.2.2")
