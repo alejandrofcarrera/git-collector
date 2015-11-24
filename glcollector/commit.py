@@ -114,7 +114,7 @@ def update(self, pr_id, pr_name, br_name):
 
     # Get all commits from specific branch (gitlab) ids + commit's info
     __co_gl_val = self.gl_instance.get_projects_repository_commits_byId(id=pr_id, ref_name=br_name)
-    __co_gl_id = map(lambda x: x.get("id"), __co_gl_val)
+    __co_gl_id = map(lambda x: __pr_id + ":" + x.get("id"), __co_gl_val)
     __co_gl_val = dict(zip(__co_gl_id, __co_gl_val))
 
     # Get all commits from specific branch (redis) ids + created_at
@@ -147,15 +147,16 @@ def update(self, pr_id, pr_name, br_name):
 
         # Get commit identifier (sha) + info
         __co_id = i
+        __co_id_org = str(__co_id).replace(__pr_id + ":", "")
 
         # Get email from commit and add as contributor
-        __co_em = __co_gl_val[i].get('author_email').lower()
+        __co_em = __co_gl_val[__co_id].get('author_email').lower()
         __user_key = base64.b16encode(__co_em)
         __br_info_collaborators.add(__user_key)
 
         # Get information from gitlab or redis
         if len(self.rd_instance_co.keys(__co_id)) == 0:
-            __co_info = __co_gl_val[i]
+            __co_info = __co_gl_val[__co_id]
             st_clean.commit(__co_info)
 
             # Get commit information from git log
@@ -163,35 +164,36 @@ def update(self, pr_id, pr_name, br_name):
             __co_info["author"] = __user_key
 
             # Insert commit information
-            self.rd_instance_co.hmset(__pr_id + ":" + __co_id, __co_info)
+            self.rd_instance_co.hmset(__co_id, __co_info)
 
         else:
             __co_info = self.rd_instance_co.hgetall(__co_id)
 
         # Set values at Redis Structure - User
-        self.rd_instance_us_co.zadd(__user_key, __br_id + ":" + __co_id, long(__co_info.get("created_at")))
+        self.rd_instance_us_co.zadd(__user_key, __br_id + ":" + __co_id_org, long(__co_info.get("created_at")))
 
         # Set values at Redis Structure - Branch (id + timestamp)
-        __co_br.append(__pr_id + ":" + __co_id)
+        __co_br.append(__co_id)
         __co_br.append(long(__co_info.get("created_at")))
 
     for i in __mt_del:
 
         # Get commit identifier (sha) + info
         __co_id = i
+        __co_id_org = str(__co_id).replace(__pr_id + ":", "")
         __co_info = self.rd_instance_co.hgetall(__co_id)
 
         # Get email from commit and add as contributor
         __co_em = __co_info.get('author_email').lower()
         __user_key = base64.b16encode(__co_em)
-        self.rd_instance_us_co.zrem(__user_key, __br_id + ":" + __co_id)
+        self.rd_instance_us_co.zrem(__user_key, __br_id + ":" + __co_id_org)
 
     # Check if contributors keep being same
     if len(__mt_del) > 0:
         __br_info_collaborators_tmp = __br_info_collaborators.copy()
         for i in __br_info_collaborators:
             count_co = 0
-            __br_us_co = self.rd_instance_us_co.smembers(i)
+            __br_us_co = self.rd_instance_us_co.zrange(i, 0, -1)
             for j in __br_us_co:
                 if str(j).startswith(__br_id):
                     count_co = 1
