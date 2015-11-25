@@ -26,18 +26,10 @@ __author__ = 'Alejandro F. Carrera'
 
 # Collector Package Configuration
 NAME = "gl-collector"
-VERSION = "1.1.2"
+VERSION = "1.1.3"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
 DELAY = os.environ.get("COLL_DELAY", 60 * 60 * 3)
-
-# Collector Hook Configuration to get changes from Gitlab
-COLLECTOR_WEBHOOK_IP = os.environ.get("COLL_WEBHOOK_IP", "10.0.2.2")
-
-# Collector Configuration to create Flask API
-COLLECTOR_LISTEN_PROT = os.environ.get("COLL_LISTEN_PROT", "http")
-COLLECTOR_LISTEN_PORT = int(os.environ.get("COLL_LISTEN_PORT", 5000))
-COLLECTOR_LISTEN_IP = os.environ.get("COLL_LISTEN_IP", "0.0.0.0")
 
 # Collector Configuration Folder
 COLLECTOR_GIT_FOLDER = "/tmp/gl-collector/"
