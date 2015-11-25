@@ -204,6 +204,14 @@ def save_fs(pr_info):
     __pr_id = str(pr_info.get("id")) + "_" + pr_info.get("name")
     __pr_url = pr_info.get("http_url_to_repo")
 
+    # Insert credentials HTTP/S
+    __replace = "http://"
+    if str(__pr_url).startswith("https://"):
+        __replace = "https://"
+    __pr_url = str(__pr_url).replace(
+        __replace, __replace + config.GITLAB_USER + ":" + config.GITLAB_PASS + "@"
+        )
+
     # Change current directory to folder
     os.chdir(config.COLLECTOR_GIT_FOLDER)
 
@@ -224,7 +232,7 @@ def save_fs(pr_info):
         os.chdir(config.COLLECTOR_GIT_FOLDER + __pr_id)
 
         # Clone (mirror like bare repository)
-        commands.getstatusoutput("git pull")
+        commands.getstatusoutput("git pull " + __pr_url)
 
         # Print alert
         if config.DEBUGGER:
