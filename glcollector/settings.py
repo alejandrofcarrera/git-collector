@@ -26,10 +26,10 @@ __author__ = 'Alejandro F. Carrera'
 
 # Collector Package Configuration
 NAME = "gl-collector"
-VERSION = "1.1.4"
+VERSION = "1.1.5"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
-DELAY = os.environ.get("COLL_DELAY", 60 * 60 * 3)
+DELAY = int(os.environ.get("COLL_DELAY", 60 * 60 * 3))
 
 # Collector Configuration Folder
 COLLECTOR_GIT_FOLDER = "/tmp/gl-collector/"
