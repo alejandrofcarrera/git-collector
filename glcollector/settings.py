@@ -26,7 +26,7 @@ __author__ = 'Alejandro F. Carrera'
 
 # Collector Package Configuration
 NAME = "gl-collector"
-VERSION = "1.1.3"
+VERSION = "1.1.4"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
 DELAY = os.environ.get("COLL_DELAY", 60 * 60 * 3)
@@ -79,7 +79,7 @@ GITLAB_REPO_FIELDS = [
     "first_commit_at", "contributors", "http_url_to_repo", "web_url",
     "owner", "id", "archived", "public", "description", "default_branch",
     "last_commit_at", "last_activity_at", "name", "created_at", "avatar_url",
-    "tags", "namespace"
+    "tags", "namespace", "avatar_url"
 ]
 
 # Fields about Branch

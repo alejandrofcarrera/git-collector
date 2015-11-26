@@ -45,6 +45,7 @@ def projects(project_one, project_two):
         "name": "string",
         "public": "string",
         "owner": "string",
+        "avatar_url": "string",
         "http_url_to_repo": "string",
         "default_branch": "string",
         "web_url": "string",
@@ -73,7 +74,9 @@ def groups(group_one, group_two):
 def diff_structure(st_keys, st_one, st_two):
     st_new = {}
     for i in st_one.keys():
-        if st_keys[i] == "string" and str(st_one[i]) != str(st_two[i]):
+        if i not in st_two:
+            st_new[i] = st_one[i]
+        elif st_keys[i] == "string" and str(st_one[i]) != str(st_two[i]):
             st_new[i] = st_one[i]
         elif st_keys[i] == "int" and int(st_one[i]) != int(st_two[i]):
             st_new[i] = st_one[i]
