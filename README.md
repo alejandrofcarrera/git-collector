@@ -1,19 +1,8 @@
-Gitlab-Collector
+Git-Collector
 ==============
 
-The Gitlab data collector service allow better data and use properly for gitlab-enhancer or other apps.
+The Git data collector service allow save data from git and use properly for other apps.
 
-Gitlab-Collector is distributed under the Apache License, version 2.0.
+This repository is the base to support SmartDeveloperHub SCM Collectors.
 
-[![PyPI version](https://img.shields.io/badge/gl--collector%20pypi-1.1.5-brightgreen.svg)](https://pypi.python.org/pypi/gl-collector/1.1.5) [![PyPI Downloads](https://img.shields.io/pypi/dm/gl-collector.svg)](https://pypi.python.org/pypi/gl-collector/1.1.5)
-
-==============
-
-Installation:
-
-1. `pip install gl-collector`
-
-==============
-
-If you want to contribute, please do PR :)
-
+Git-Collector is distributed under the Apache License, version 2.0.

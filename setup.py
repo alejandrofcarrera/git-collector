@@ -5,7 +5,7 @@
   Center for Open Middleware
         http://www.centeropenmiddleware.com/
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-  Copyright (C) 2015 Center for Open Middleware.
+  Copyright (C) 2016 Center for Open Middleware.
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -22,7 +22,7 @@
 import os
 
 from setuptools import setup, find_packages
-from glcollector import settings as config
+from gitcollector import settings as config
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -31,16 +31,16 @@ def read(name):
     return open(os.path.join(os.path.dirname(__file__), name)).read()
 
 setup(
-    name=config.NAME,
-    version=config.VERSION,
+    name=config.GC_NAME,
+    version=config.GC_VERSION,
     author="Alejandro F. Carrera",
-    author_email="alejandro.fernandez.carrera@centeropenmiddleware.com",
-    description="A project for Gitlab Collector Service",
+    author_email="alej4fc@gmail.com",
+    description="Project to get data through the git protocol",
     license="Apache 2",
-    keywords="inner-source collector gl-enhancer",
-    url="https://github.com/SmartDeveloperHub/gitlab-collector",
+    keywords="inner-source collector git git-collector",
+    url="https://github.com/alejandrofcarrera/git-collector",
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['gl-api', 'redis', 'flask', 'flask_negotiate', 'python-dateutil'],
-    classifiers=[],
-    scripts=['collector']
+    install_requires=['redis', 'flask', 'flask_negotiate', 'python-crontab'],
+    scripts=['collector'],
+    classifiers=[]
 )
