@@ -58,7 +58,7 @@ GC_USE_PASSWORD = True
 GC_PASSWORD = gen_password() if GC_USE_PASSWORD else None
 
 logging.basicConfig(
-    filename="/var/log/" + GC_LONGNAME + ".log",
+    filename="/var/log/" + GC_NAME + ".log",
     filemode='a',
     format='%(asctime)s %(message)s',
     datefmt='%H:%M:%S',
