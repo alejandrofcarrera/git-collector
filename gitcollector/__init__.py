@@ -19,34 +19,4 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-from datetime import datetime
-from gitcollector import settings as config
-from gitcollector import collector
-
 __author__ = 'Alejandro F. Carrera'
-
-
-def execute_collector():
-    st = datetime.utcnow().strftime('%d-%B-%Y %H:%M:%S')
-    config.print_message(" - %s (%s) executed at %s" % (
-        config.GC_LONGNAME, config.GC_VERSION, st)
-    )
-    if config.GC_USE_PASSWORD:
-        config.print_message(" - Password: %s" % config.GC_PASSWORD)
-    try:
-        __collector = collector.Collector(
-            ip=config.GC_IP, port=config.GC_PORT, pwd=config.GC_PASSWORD
-        )
-        __collector.app.run(__collector.ip, __collector.port)
-    except Exception as e:
-        config.print_error(e.message)
-    st = datetime.utcnow().strftime('%d-%B-%Y %H:%M:%S')
-    config.print_message(" - %s (%s) finished at %s" % (
-        config.GC_LONGNAME, config.GC_VERSION, st)
-    )
-
-# MAIN
-
-if __name__ == '__main__':
-
-    execute_collector()
