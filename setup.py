@@ -40,7 +40,7 @@ setup(
     keywords="inner-source collector git git-collector",
     url="https://github.com/alejandrofcarrera/git-collector",
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['redis', 'flask', 'flask_negotiate', 'python-crontab'],
+    install_requires=['redis', 'flask', 'flask_negotiate'],
     scripts=['collector'],
     classifiers=[]
 )

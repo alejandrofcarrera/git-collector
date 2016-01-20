@@ -27,7 +27,7 @@ __author__ = 'Alejandro F. Carrera'
 
 
 def execute_collector():
-    st = datetime.utcnow().strftime('%d-%B-%Y %H:%M:%S')
+    st = datetime.utcnow().strftime('%d %B %Y %H:%M:%S')
     config.print_message(' - %s (%s) executed at %s' % (
         config.GC_LONGNAME, config.GC_VERSION, st)
     )
@@ -40,7 +40,7 @@ def execute_collector():
         __collector.app.run(__collector.ip, __collector.port)
     except Exception as e:
         config.print_error(e.message)
-    st = datetime.utcnow().strftime('%d-%B-%Y %H:%M:%S')
+    st = datetime.utcnow().strftime('%d %B %Y %H:%M:%S')
     config.print_message(' - %s (%s) finished at %s' % (
         config.GC_LONGNAME, config.GC_VERSION, st)
     )

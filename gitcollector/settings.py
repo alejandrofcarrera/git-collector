@@ -47,11 +47,13 @@ GC_FOLDER = "/tmp/git-collector"
 GC_DB_IP = os.environ.get("GC_RED_IP", "127.0.0.1")
 GC_DB_PORT = int(os.environ.get("GC_RED_PORT", 6379))
 GC_DB_PASS = os.environ.get("GC_RED_PASS", None)
-GC_DB_RE = int(os.environ.get("GC_REPOSITORIES", 0))
-GC_DB_BR = int(os.environ.get("GC_BRANCH", 1))
-GC_DB_CO = int(os.environ.get("GC_COMMIT", 2))
-GC_DB_BR_CO = int(os.environ.get("GC_BRANCH_COMMIT", 3))
-GC_DB_US_CO = int(os.environ.get("GC_COMMITTER_COMMIT", 4))
+
+# Collector - Redis Database
+GC_DB_REPOSITORIES = int(os.environ.get("GC_REPOSITORIES", 0))
+GC_DB_BRANCHES = int(os.environ.get("GC_BRANCH", 1))
+GC_DB_COMMITS = int(os.environ.get("GC_COMMIT", 2))
+GC_DB_BRANCH_COMMIT = int(os.environ.get("GC_BRANCH_COMMIT", 3))
+GC_DB_COMMITTER_COMMIT = int(os.environ.get("GC_COMMITTER_COMMIT", 4))
 
 # Collector Password Auto-generated
 GC_USE_PASSWORD = True

@@ -58,11 +58,11 @@ def redis_create_pool(db):
 def rd_connect():
     c = {}
     try:
-        c["r"] = redis_create_pool(config.GC_DB_RE)
-        c["b"] = redis_create_pool(config.GC_DB_BR)
-        c["c"] = redis_create_pool(config.GC_DB_CO)
-        c["cb"] = redis_create_pool(config.GC_DB_BR_CO)
-        c["cc"] = redis_create_pool(config.GC_DB_US_CO)
+        c["r"] = redis_create_pool(config.GC_DB_REPOSITORIES)
+        c["b"] = redis_create_pool(config.GC_DB_BRANCHES)
+        c["c"] = redis_create_pool(config.GC_DB_COMMITS)
+        c["cb"] = redis_create_pool(config.GC_DB_BRANCH_COMMIT)
+        c["cc"] = redis_create_pool(config.GC_DB_COMMITTER_COMMIT)
         return c
     except EnvironmentError as e:
         raise e
