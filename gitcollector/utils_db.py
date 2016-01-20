@@ -20,6 +20,7 @@
 """
 
 import re
+import uuid
 import hmac
 import redis
 import hashlib
@@ -28,8 +29,11 @@ import settings as config
 __author__ = 'Alejandro F. Carrera'
 
 
-def create_repository_id(prof):
+def create_repository_id():
     sig = ''
+    prof = {
+        'id': uuid.uuid1()
+    }
     for key in sorted(prof.keys()):
         sig += '|%s=%s' % (key, prof[key])
     sig = hmac.new('collector|repository', sig.encode(), hashlib.sha1)
@@ -67,67 +71,103 @@ def rd_connect():
 #########################################################
 
 
+class CollectorException(Exception):
+    pass
+
+
+EXCEP_REPOSITORY_NOT_FOUND = {
+    'msg': "Repository does not exist.",
+    'code': 404
+}
+
+EXCEP_REPOSITORY_EXISTS = {
+    'msg': "Repository exists. Please update or remove it.",
+    'code': 422
+}
+
+#########################################################
+
+
 def check_git_username(username):
     return re.match('^\w[\w-]+$', username)
 
+
+def check_url_exists(redis_instance, url):
+    r = redis_instance.get('r').keys("*")
+    if 'active' in r:
+        r.remove('active')
+    for i in r:
+        return redis_instance.get('r').hgetall(i).get('url') == url
+    return False
 
 #########################################################
 
 
 def get_repositories(redis_instance):
     r = redis_instance.get('r').keys("*")
+    if 'active' in r:
+        r.remove('active')
     result = []
-    [result.append(redis_instance.get('r').hgetall(i)) for i in r]
+    [result.append(get_repository(redis_instance, i)) for i in r]
     return result
 
 
 def set_repositories(redis_instance, parameters):
-    r_id = create_repository_id({
-        'URL': parameters.get('url')
-    })
-    if redis_instance.get('r').exists(r_id):
-        raise Exception('Repository already exists')
-    redis_instance.get('r').hmset(r_id, {
+    r_id = create_repository_id()
+    if check_url_exists(redis_instance, parameters.get('url')):
+        raise CollectorException(EXCEP_REPOSITORY_EXISTS)
+    r = {
         'id': r_id,
         'url': parameters.get('url'),
-        'user': parameters.get('user', None),
-        'password': parameters.get('password', None)
-    })
+        'state': 'active' if 'state' not in parameters else parameters.get('state')
+    }
+    if 'user' in parameters:
+        r['user'] = parameters.get('user')
+    if 'password' in parameters:
+        r['password'] = parameters.get('password')
+    redis_instance.get('r').hmset(r_id, r)
+    redis_instance.get('r').sadd('active', r_id)
     return r_id
 
 
 #########################################################
 
 
-def get_repository(redis_instance, repository_id):
+def get_repository(redis_instance, repository_id, with_password=False):
     if not redis_instance.get('r').exists(repository_id):
-        raise Exception('Repository not found')
-
-    return redis_instance.get('r').hgetall(repository_id)
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+    r = redis_instance.get('r').hgetall(repository_id)
+    if not with_password and 'password' in r:
+        del r['password']
+    return r
 
 
 def set_repository(redis_instance, repository_id, parameters):
     if not redis_instance.get('r').exists(repository_id):
-        raise Exception('Repository not found')
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+
+    r_data = redis_instance.get('r').hgetall(repository_id)
 
     if 'url' in parameters:
-        redis_instance.get('r').hset(
-            repository_id, 'url', parameters.get('url')
-        )
+        if check_url_exists(redis_instance, parameters.get('url')):
+            raise CollectorException(EXCEP_REPOSITORY_EXISTS)
+        r_data['url'] = parameters.get('url')
 
     if 'user' in parameters:
-        redis_instance.get('r').hset(
-            repository_id, 'user', parameters.get('user')
-        )
+        r_data['user'] = parameters.get('user')
 
     if 'password' in parameters:
-        redis_instance.get('r').hset(
-            repository_id, 'password', parameters.get('password')
-        )
+        r_data['password'] = parameters.get('password')
+
+    redis_instance.get('r').hmset(repository_id, r_data)
 
 
-def del_repository(redis_instance, repository_id):
+def act_repository(redis_instance, repository_id, state):
     if not redis_instance.get('r').exists(repository_id):
-        raise Exception('Repository not found')
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
 
-    redis_instance.get('r').delete(repository_id)
+    if state == 'nonactive':
+        redis_instance.get('r').srem('active', repository_id)
+    else:
+        redis_instance.get('r').sadd('active', repository_id)
+    redis_instance.get('r').hset(repository_id, 'state', state)

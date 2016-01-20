@@ -39,16 +39,10 @@ def generate_json_error():
     }), 422)
 
 
-def generate_repo_exist_error():
+def generate_repo_error(msg, status):
     return make_response(json.dumps({
-        "Error": "Repository exists. Please update or remove it."
-    }), 422)
-
-
-def generate_repo_non_exist_error():
-    return make_response(json.dumps({
-        "Error": "Repository does not exist."
-    }), 404)
+        "Error": msg
+    }), status)
 
 
 #########################################################

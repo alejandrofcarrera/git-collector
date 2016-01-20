@@ -67,7 +67,7 @@ class Collector(object):
             # Check Password is mandatory and valid
             try:
                 utils_http.check_password(request, self.password)
-            except Exception as e:
+            except Exception as c1:
                 return utils_http.generate_pwd_error()
 
             if request.method == 'GET':
@@ -79,7 +79,7 @@ class Collector(object):
                 # Check if JSON is available
                 try:
                     param = request.json
-                except Exception as e:
+                except Exception as c2:
                     return utils_http.generate_json_error()
                 if 'url' not in param:
                     return utils_http.generate_json_error()
@@ -93,6 +93,11 @@ class Collector(object):
                     if not utils_db.check_git_username(param.get('user')):
                         return utils_http.generate_json_error()
 
+                # Check if state is available and valid
+                if 'state' in param:
+                    if param.get('state') != 'active' and param.get('state') != 'nonactive':
+                        return utils_http.generate_json_error()
+
                 # Save repository at redis
                 try:
                     r_id = utils_db.set_repositories(self.rd, param)
@@ -101,11 +106,13 @@ class Collector(object):
                         "ID": r_id,
                         "Status": "Added"
                     }), 201)
-                except Exception as e:
-                    return utils_http.generate_repo_exist_error()
+                except utils_db.CollectorException as c3:
+                    return utils_http.generate_repo_error(
+                        c3.args[0].get('msg'), c3.args[0].get('code')
+                    )
 
-        # Delete repository
-        @self.app.route('/api/repositories/<string:r_id>', methods=['GET', 'PUT', 'DELETE'])
+        # Get and Update Repository
+        @self.app.route('/api/repositories/<string:r_id>', methods=['GET', 'PUT'])
         @produces('application/json')
         @consumes('application/json')
         def repository(r_id):
@@ -113,7 +120,7 @@ class Collector(object):
             # Check Password is mandatory and valid
             try:
                 utils_http.check_password(request, self.password)
-            except Exception as e:
+            except Exception as c4:
                 return utils_http.generate_pwd_error()
 
             if request.method == 'GET':
@@ -121,8 +128,10 @@ class Collector(object):
                     return make_response(json.dumps(
                         utils_db.get_repository(self.rd, r_id)
                     ), 200)
-                except Exception as e:
-                    return utils_http.generate_repo_non_exist_error()
+                except Exception as c5:
+                    return utils_http.generate_repo_error(
+                        c5.args[0].get('msg'), c5.args[0].get('code')
+                    )
 
             else:
 
@@ -131,7 +140,7 @@ class Collector(object):
                     # Check if JSON is available
                     try:
                         param = request.json
-                    except Exception as e:
+                    except Exception as c6:
                         return utils_http.generate_json_error()
 
                     # Check if URL is valid
@@ -152,17 +161,44 @@ class Collector(object):
                         }))
 
                     # Catch exception
-                    except Exception as e:
-                        return utils_http.generate_repo_non_exist_error()
+                    except Exception as c7:
+                        return utils_http.generate_repo_error(
+                            c7.args[0].get('msg'), c7.args[0].get('code')
+                        )
 
-                else:
-                    try:
-                        utils_db.del_repository(self.rd, r_id)
-                        return make_response(json.dumps({
-                            "ID": r_id,
-                            "Status": "Deleted"
-                        }))
+        # De/activate Repository
+        @self.app.route('/api/repositories/<string:r_id>/state', methods=['POST'])
+        @produces('application/json')
+        @consumes('application/json')
+        def repository_activation(r_id):
 
-                    # Catch exception
-                    except Exception as e:
-                        return utils_http.generate_repo_non_exist_error()
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c8:
+                return utils_http.generate_pwd_error()
+
+            try:
+                param = request.json
+            except Exception as c9:
+                return utils_http.generate_json_error()
+
+            # Check if state is valid
+            if 'state' not in param:
+                return utils_http.generate_json_error()
+            st = param.get('state')
+            if st != 'active' and st != 'nonactive':
+                return utils_http.generate_json_error()
+
+            try:
+                utils_db.act_repository(self.rd, r_id, st)
+                return make_response(json.dumps({
+                    "ID": r_id,
+                    "Status": "Activated" if st == 'active' else 'Deactivated'
+                }))
+
+            # Catch exception
+            except Exception as c10:
+                return utils_http.generate_repo_error(
+                    c10.args[0].get('msg'), c10.args[0].get('code')
+                )
