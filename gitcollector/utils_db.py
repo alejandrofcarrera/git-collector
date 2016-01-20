@@ -1,4 +1,4 @@
-"""
+'''
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
   This file is part of the Smart Developer Hub Project:
     http://www.smartdeveloperhub.org
@@ -7,17 +7,17 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
   Copyright (C) 2016 Center for Open Middleware.
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-  Licensed under the Apache License, Version 2.0 (the "License");
+  Licensed under the Apache License, Version 2.0 (the 'License');
   you may not use this file except in compliance with the License.
   You may obtain a copy of the License at
             http://www.apache.org/licenses/LICENSE-2.0
   Unless required by applicable law or agreed to in writing, software
-  distributed under the License is distributed on an "AS IS" BASIS,
+  distributed under the License is distributed on an 'AS IS' BASIS,
   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   See the License for the specific language governing permissions and
   limitations under the License.
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-"""
+'''
 
 import re
 import uuid
@@ -52,17 +52,17 @@ def redis_create_pool(db):
         __redis_db.client_list()
         return __redis_db
     except Exception as e:
-        raise EnvironmentError(" * Redis configuration is not valid or it is not online")
+        raise EnvironmentError(' * Redis configuration is not valid or it is not online')
 
 
 def rd_connect():
     c = {}
     try:
-        c["r"] = redis_create_pool(config.GC_DB_REPOSITORIES)
-        c["b"] = redis_create_pool(config.GC_DB_BRANCHES)
-        c["c"] = redis_create_pool(config.GC_DB_COMMITS)
-        c["cb"] = redis_create_pool(config.GC_DB_BRANCH_COMMIT)
-        c["cc"] = redis_create_pool(config.GC_DB_COMMITTER_COMMIT)
+        c['r'] = redis_create_pool(config.GC_DB_REPOSITORIES)
+        c['b'] = redis_create_pool(config.GC_DB_BRANCHES)
+        c['c'] = redis_create_pool(config.GC_DB_COMMITS)
+        c['cb'] = redis_create_pool(config.GC_DB_BRANCH_COMMIT)
+        c['cc'] = redis_create_pool(config.GC_DB_COMMITTER_COMMIT)
         return c
     except EnvironmentError as e:
         raise e
@@ -76,12 +76,12 @@ class CollectorException(Exception):
 
 
 EXCEP_REPOSITORY_NOT_FOUND = {
-    'msg': "Repository does not exist.",
+    'msg': 'Repository does not exist.',
     'code': 404
 }
 
 EXCEP_REPOSITORY_EXISTS = {
-    'msg': "Repository exists. Please update or remove it.",
+    'msg': 'Repository exists. Please update or remove it.',
     'code': 422
 }
 
@@ -93,7 +93,7 @@ def check_git_username(username):
 
 
 def check_url_exists(redis_instance, url):
-    r = redis_instance.get('r').keys("*")
+    r = redis_instance.get('r').keys('*')
     if 'active' in r:
         r.remove('active')
     for i in r:
@@ -104,12 +104,18 @@ def check_url_exists(redis_instance, url):
 
 
 def get_repositories(redis_instance):
-    r = redis_instance.get('r').keys("*")
+    r = redis_instance.get('r').keys('*')
     if 'active' in r:
         r.remove('active')
     result = []
     [result.append(get_repository(redis_instance, i)) for i in r]
     return result
+
+
+def get_repositories_active(redis_instance):
+    if redis_instance.get('r').exists('active'):
+        return redis_instance.get('r').smembers('active')
+    return []
 
 
 def set_repositories(redis_instance, parameters):
