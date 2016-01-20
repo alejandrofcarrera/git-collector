@@ -21,6 +21,7 @@
 
 from flask import request, make_response, Flask
 from flask_negotiate import produces, consumes
+from task import CollectorTask
 import settings as config
 import utils_http
 import utils_db
@@ -37,9 +38,18 @@ class Collector(object):
         self.port = port
         self.password = pwd
         self.app = Flask(__name__)
+
+        # Create Redis Connection
         try:
             self.rd = utils_db.rd_connect()
         except EnvironmentError as e:
+            raise e
+
+        # Create Collector Thread
+        try:
+            self.worker = CollectorTask(self.rd)
+            self.worker.start()
+        except Exception as e:
             raise e
 
         # Root path (same as /api)
