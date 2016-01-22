@@ -19,7 +19,6 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import time
 import settings as config
 import utils_git
 import threading
@@ -68,7 +67,6 @@ class CollectorTask(object):
         else:
             rep_active = utils_db.get_repositories_active(self.rd)
         for i in rep_active:
-            time.sleep(10)
             rep_info = utils_db.get_repository(self.rd, i, True)
             utils_git.repository_clone(rep_info)
         print_finishing()
