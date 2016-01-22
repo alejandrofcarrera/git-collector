@@ -52,16 +52,14 @@ def repository_clone(info):
     if not os.path.exists(__pr_id):
 
         # Clone (mirror like bare repository)
-        res = commands.getstatusoutput(
-            'git clone --mirror ' + __pr_url + ' ' + __pr_id
-        )
-
-        if 'Repository not found.' in res[1]:
-            config.print_message(' * [Worker] Error : URL - %s' % __pr_id)
-        elif 'Username' in res[1] or 'Credentials' in res[1]:
-            config.print_message(' * [Worker] Error : Credentials - %s' % __pr_id)
-        else:
+        res = commands.getstatusoutput('git clone ' + __pr_url + ' ' + __pr_id)
+        if res[0] == 0:
             config.print_message(' * [Worker] Success : Cloned - %s' % __pr_id)
+        else:
+            if 'Repository not found.' in res[1]:
+                config.print_message(' * [Worker] Error : URL - %s' % __pr_id)
+            else:
+                config.print_message(' * [Worker] Error : Credentials - %s' % __pr_id)
 
     # Repository exists
     else:
@@ -71,13 +69,13 @@ def repository_clone(info):
 
         # Clone (mirror like bare repository)
         res = commands.getstatusoutput('git pull ' + __pr_url)
-
-        if 'Repository not found.' in res[1]:
-            config.print_message(' * [Worker] Error : URL - %s' % __pr_id)
-        elif 'Username' in res[1] or 'Credentials' in res[1]:
-            config.print_message(' * [Worker] Error : Credentials - %s' % __pr_id)
-        else:
+        if res[0] == 0:
             config.print_message(' * [Worker] Success : Pulled - %s' % __pr_id)
+        else:
+            if 'Repository not found.' in res[1]:
+                config.print_message(' * [Worker] Error : URL - %s' % __pr_id)
+            else:
+                config.print_message(' * [Worker] Error : Credentials - %s' % __pr_id)
 
     # Revert current directory
     os.chdir(cur_dir)
