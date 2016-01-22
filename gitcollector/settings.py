@@ -50,10 +50,11 @@ GC_DB_PASS = os.environ.get("GC_RED_PASS", None)
 
 # Collector - Redis Database
 GC_DB_REPOSITORIES = int(os.environ.get("GC_REPOSITORIES", 0))
-GC_DB_BRANCHES = int(os.environ.get("GC_BRANCH", 1))
-GC_DB_COMMITS = int(os.environ.get("GC_COMMIT", 2))
-GC_DB_BRANCH_COMMIT = int(os.environ.get("GC_BRANCH_COMMIT", 3))
-GC_DB_COMMITTER_COMMIT = int(os.environ.get("GC_COMMITTER_COMMIT", 4))
+GC_DB_REPOSITORIES_URL = int(os.environ.get("GC_REPOSITORIES_URL", 1))
+GC_DB_BRANCHES = int(os.environ.get("GC_BRANCH", 2))
+GC_DB_COMMITS = int(os.environ.get("GC_COMMIT", 3))
+GC_DB_BRANCH_COMMIT = int(os.environ.get("GC_BRANCH_COMMIT", 4))
+GC_DB_COMMITTER_COMMIT = int(os.environ.get("GC_COMMITTER_COMMIT", 5))
 
 # Collector Password Auto-generated
 GC_USE_PASSWORD = True
