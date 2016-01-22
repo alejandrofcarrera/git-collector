@@ -1,4 +1,4 @@
-'''
+"""
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
   This file is part of the Smart Developer Hub Project:
     http://www.smartdeveloperhub.org
@@ -17,7 +17,7 @@
   See the License for the specific language governing permissions and
   limitations under the License.
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-'''
+"""
 
 import re
 import uuid
@@ -59,6 +59,7 @@ def rd_connect():
     c = {}
     try:
         c['r'] = redis_create_pool(config.GC_DB_REPOSITORIES)
+        c['u'] = redis_create_pool(config.GC_DB_REPOSITORIES_URL)
         c['b'] = redis_create_pool(config.GC_DB_BRANCHES)
         c['c'] = redis_create_pool(config.GC_DB_COMMITS)
         c['cb'] = redis_create_pool(config.GC_DB_BRANCH_COMMIT)
@@ -93,12 +94,8 @@ def check_git_username(username):
 
 
 def check_url_exists(redis_instance, url):
-    r = redis_instance.get('r').keys('*')
-    if 'active' in r:
-        r.remove('active')
-    for i in r:
-        return redis_instance.get('r').hgetall(i).get('url') == url
-    return False
+    return redis_instance.get('u').exists(url)
+
 
 #########################################################
 
@@ -119,9 +116,9 @@ def get_repositories_active(redis_instance):
 
 
 def set_repositories(redis_instance, parameters):
-    r_id = create_repository_id()
     if check_url_exists(redis_instance, parameters.get('url')):
-        raise CollectorException(EXCEP_REPOSITORY_EXISTS)
+            raise CollectorException(EXCEP_REPOSITORY_EXISTS)
+    r_id = create_repository_id()
     r = {
         'id': r_id,
         'url': parameters.get('url'),
@@ -133,6 +130,7 @@ def set_repositories(redis_instance, parameters):
         r['password'] = parameters.get('password')
     redis_instance.get('r').hmset(r_id, r)
     redis_instance.get('r').sadd('active', r_id)
+    redis_instance.get('u').set(r.get('url'), r_id)
     return r_id
 
 
@@ -157,6 +155,7 @@ def set_repository(redis_instance, repository_id, parameters):
     if 'url' in parameters:
         if check_url_exists(redis_instance, parameters.get('url')):
             raise CollectorException(EXCEP_REPOSITORY_EXISTS)
+        redis_instance.get('u').delete(r_data.get('url'))
         r_data['url'] = parameters.get('url')
 
     if 'user' in parameters:
@@ -166,6 +165,7 @@ def set_repository(redis_instance, repository_id, parameters):
         r_data['password'] = parameters.get('password')
 
     redis_instance.get('r').hmset(repository_id, r_data)
+    redis_instance.get('u').set(r_data.get('url'), r_data.get('id'))
 
 
 def act_repository(redis_instance, repository_id, state):

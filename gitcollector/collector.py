@@ -24,13 +24,44 @@ from flask_negotiate import produces, consumes
 from task import CollectorTask
 import settings as config
 import utils_http
+import threading
 import utils_db
 import json
+import os
 
 __author__ = 'Alejandro F. Carrera'
 
 
 class Collector(object):
+
+    def schedule_task(self, func, sec):
+        def func_wrapper():
+            self.schedule_task(func, sec)
+            func()
+        t = threading.Timer(sec, func_wrapper)
+        t.start()
+        return t
+
+    def first_task_run(self):
+        self.create_task()
+        self.schedule_task(self.create_task, config.GC_DELAY)
+
+    def create_task(self):
+        # Create Collector Thread
+        if self.worker is not None:
+            st = self.worker.status()
+            if st == 'running':
+                return
+        try:
+            self.worker = CollectorTask(self.rd)
+            if len(self.list):
+                self.worker.list = self.list.copy()
+            self.worker.start()
+            self.list = set()
+        except Exception as e:
+            config.print_error(' - %s (%s) thread not working' % (
+                config.GC_LONGNAME, config.GC_VERSION)
+            )
 
     # Collector constructor
     def __init__(self, ip, port, pwd):
@@ -38,6 +69,12 @@ class Collector(object):
         self.port = port
         self.password = pwd
         self.app = Flask(__name__)
+        self.list = set()
+        self.worker = None
+
+        # Create folder to allocate all repositories
+        if not os.path.exists(config.GC_FOLDER):
+            os.makedirs(config.GC_FOLDER)
 
         # Create Redis Connection
         try:
@@ -45,12 +82,8 @@ class Collector(object):
         except EnvironmentError as e:
             raise e
 
-        # Create Collector Thread
-        try:
-            self.worker = CollectorTask(self.rd)
-            self.worker.start()
-        except Exception as e:
-            raise e
+        # Create Schedule Collector Thread
+        self.first_task_run()
 
         # Root path (same as /api)
         @self.app.route('/', methods=['GET'])
@@ -111,6 +144,8 @@ class Collector(object):
                 # Save repository at redis
                 try:
                     r_id = utils_db.set_repositories(self.rd, param)
+                    self.list.add(r_id)
+                    self.create_task()
                     return make_response(json.dumps({
                         "URL": param.get('url'),
                         "ID": r_id,
@@ -154,7 +189,9 @@ class Collector(object):
                         return utils_http.generate_json_error()
 
                     # Check if URL is valid
+                    flag_update = False
                     if 'url' in param:
+                        flag_update = True
                         if not utils_http.check_url(param.get('url')):
                             return utils_http.generate_json_error()
 
@@ -165,6 +202,9 @@ class Collector(object):
 
                     try:
                         utils_db.set_repository(self.rd, r_id, param)
+                        if flag_update:
+                            self.list.add(r_id)
+                            self.create_task()
                         return make_response(json.dumps({
                             "ID": r_id,
                             "Status": "Updated"
@@ -202,6 +242,9 @@ class Collector(object):
 
             try:
                 utils_db.act_repository(self.rd, r_id, st)
+                if st == 'active':
+                    self.list.add(r_id)
+                    self.create_task()
                 return make_response(json.dumps({
                     "ID": r_id,
                     "Status": "Activated" if st == 'active' else 'Deactivated'

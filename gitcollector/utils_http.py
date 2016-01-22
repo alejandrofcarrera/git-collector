@@ -20,8 +20,8 @@
 """
 
 from flask import make_response
-import validators
 import settings as config
+import validators
 import json
 
 __author__ = 'Alejandro F. Carrera'
