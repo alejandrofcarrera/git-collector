@@ -23,6 +23,7 @@ import re
 import uuid
 import hmac
 import redis
+import base64
 import hashlib
 import settings as config
 
@@ -38,6 +39,24 @@ def create_repository_id():
         sig += '|%s=%s' % (key, prof[key])
     sig = hmac.new('collector|repository', sig.encode(), hashlib.sha1)
     return str(sig.hexdigest()).lower()
+
+
+def create_branch_id_from_repository(repo_info, branch_name):
+    if type(repo_info) is dict:
+        return repo_info.get('id') + ':' + base64.b16encode(branch_name)
+    else:
+        return repo_info + ':' + base64.b16encode(branch_name)
+
+
+def create_user_id_from_email(email):
+    return base64.b16encode(email)
+
+
+def create_commit_id_from_repo(repo_info, sha):
+    return repo_info.get('id') + ':' + sha
+
+
+#########################################################
 
 
 def redis_create_pool(db):
@@ -177,3 +196,108 @@ def act_repository(redis_instance, repository_id, state):
     else:
         redis_instance.get('r').sadd('active', repository_id)
     redis_instance.get('r').hset(repository_id, 'state', state)
+
+
+#########################################################
+
+
+def get_branches_from_repository(redis_instance, repository_id):
+    res = set()
+    branches = redis_instance.get('b').keys(repository_id + ':*')
+    [res.add(base64.b16decode(x.split(':')[1])) for x in branches]
+    return res
+
+
+def del_branches_from_id(redis_instance, repository_id, branch_name):
+
+    # Generate ID with Base64
+    br_id = create_branch_id_from_repository(repository_id, branch_name)
+
+    # Temporal save
+    br_con = eval(redis_instance.get('b').hget(br_id, 'contributors'))
+
+    # Delete containers at redis
+    redis_instance.get('b').delete(br_id)
+    redis_instance.get('cb').delete(br_id)
+
+    commits_to_del = set()
+
+    # Remove links with contributors
+    for i in br_con:
+        us_com = redis_instance.get('cc').smembers(i)
+        br_com = filter(lambda x: str(x).startswith(br_id), us_com)
+        [commits_to_del.add(
+            str(x).split(':')[0] + ':' + str(x).split(':')[2]
+        ) for x in br_com]
+        redis_instance.get('cc').srem(i, *commits_to_del)
+
+    return commits_to_del
+
+
+#########################################################
+
+
+def get_commits_from_branch(redis_instance, repository_id, branch_name):
+    br_id = create_branch_id_from_repository(repository_id, branch_name)
+    result = {}
+    if redis_instance.get('cb').exists(br_id):
+        result_tmp = dict(redis_instance.get('cb').zrange(
+            br_id, 0, -1, withscores=True)
+        )
+        result = {}
+        [result.update({
+            x.replace(repository_id + ':', ''): result_tmp[x]
+        }) for x in result_tmp.keys()]
+    return result
+
+
+def del_commits_from_repository(redis_instance, repository_id, comm_list):
+    branch_co = set()
+    branches = redis_instance.get('b').keys(repository_id + ':*')
+    for i in branches:
+        branch_co = branch_co.union(
+            set(redis_instance.get('cb').zrange(i, 0, -1))
+        )
+    com = list(filter(lambda x: x not in branch_co, comm_list))
+    redis_instance.get('c').delete(*com)
+
+
+#########################################################
+
+
+def inject_branch_commits(redis_instance, branch_id, commits):
+    if redis_instance.get('cb').exists(branch_id):
+        redis_instance.get('cb').delete(branch_id)
+
+    commits_push = []
+    com_tmp = []
+    [com_tmp.extend([k, v]) for k, v in commits.items()]
+
+    c = 0
+    for i in com_tmp:
+        if c == 10000:
+            redis_instance.get('cb').zadd(branch_id, *commits_push)
+            commits_push = [i]
+            c = 1
+        else:
+            commits_push.append(i)
+            c += 1
+    redis_instance.get('cb').zadd(branch_id, *commits_push)
+
+
+def inject_user_commits(redis_instance, user_id, commits):
+
+    commits_push = []
+    com_tmp = []
+    [com_tmp.extend([k, v]) for k, v in commits.items()]
+
+    c = 0
+    for i in com_tmp:
+        if c == 10000:
+            redis_instance.get('cc').zadd(user_id, *commits_push)
+            commits_push = [i]
+            c = 1
+        else:
+            commits_push.append(i)
+            c += 1
+    redis_instance.get('cc').zadd(user_id, *commits_push)
