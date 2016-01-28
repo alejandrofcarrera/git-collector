@@ -19,28 +19,49 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import os
-
-from setuptools import setup, find_packages
-from gitcollector import settings as config
+from flask import make_response
+import settings as config
+import validators
+import json
 
 __author__ = 'Alejandro F. Carrera'
 
 
-def read(name):
-    return open(os.path.join(os.path.dirname(__file__), name)).read()
+def generate_pwd_error():
+    return make_response(json.dumps({
+        "Error": "Password is not valid."
+    }), 401)
 
-setup(
-    name=config.GC_NAME,
-    version=config.GC_VERSION,
-    author="Alejandro F. Carrera",
-    author_email="alej4fc@gmail.com",
-    description="Project to get data through the git protocol",
-    license="Apache 2",
-    keywords="inner-source collector git git-collector",
-    url="https://github.com/alejandrofcarrera/git-collector",
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['redis', 'flask', 'flask_negotiate', 'validators', 'pytest'],
-    scripts=['mgitcollector'],
-    classifiers=[]
-)
+
+def generate_json_error():
+    return make_response(json.dumps({
+        "Error": "JSON at request body is bad format."
+    }), 422)
+
+
+def generate_repo_error(msg, status):
+    return make_response(json.dumps({
+        "Error": msg
+    }), status)
+
+
+#########################################################
+
+
+def check_url(url):
+    try:
+        return validators.url(url)
+    except validators.ValidationFailure as e:
+        return False
+
+
+def check_password(req, pwd):
+
+    # Check Password is available at Headers
+    if config.GC_USE_PASSWORD and 'X-GC-PWD' not in req.headers:
+        raise Exception('Password is not valid')
+
+    # Check Password is valid
+    if config.GC_USE_PASSWORD and 'X-GC-PWD' in req.headers:
+        if pwd != req.headers.get('X-GC-PWD'):
+            raise Exception('Password is not valid')

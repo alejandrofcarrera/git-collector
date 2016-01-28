@@ -5,7 +5,7 @@
   Center for Open Middleware
         http://www.centeropenmiddleware.com/
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
-  Copyright (C) 2015 Center for Open Middleware.
+  Copyright (C) 2016 Center for Open Middleware.
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
   Licensed under the Apache License, Version 2.0 (the "License");
   you may not use this file except in compliance with the License.
@@ -19,29 +19,31 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import datetime
-import time
-import threading
-
-from glcollector import settings as config
-from glcollector import utils
+from datetime import datetime
+from gitcollector import settings as config
+from gitcollector import collector
 
 __author__ = 'Alejandro F. Carrera'
 
+
 def execute_collector():
-    threading.Timer(config.DELAY, execute_collector).start()
-    st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    config.print_message("* %s (%s) Started - %s" % (config.LONGNAME, config.VERSION, st))
-    # Create Object Collector
+    st = datetime.utcnow().strftime('%d %B %Y %H:%M:%S')
+    config.print_message(' - %s (%s) executed at %s' % (
+        config.GC_LONGNAME, config.GC_VERSION, st)
+    )
+    if config.GC_USE_PASSWORD:
+        config.print_message(' - Password: "%s"' % config.GC_PASSWORD)
     try:
-        __collector = utils.Collector()
-        __collector.update_information("users")
-        __collector.update_information("groups")
-        __collector.update_information("projects")
+        __collector = collector.Collector(
+            ip=config.GC_IP, port=config.GC_PORT, pwd=config.GC_PASSWORD
+        )
+        __collector.app.run(__collector.ip, __collector.port)
     except Exception as e:
         config.print_error(e.message)
-    st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
-    config.print_message("* %s (%s) Finished - %s" % (config.LONGNAME, config.VERSION, st))
+    st = datetime.utcnow().strftime('%d %B %Y %H:%M:%S')
+    config.print_message(' - %s (%s) finished at %s' % (
+        config.GC_LONGNAME, config.GC_VERSION, st)
+    )
 
 # MAIN
 

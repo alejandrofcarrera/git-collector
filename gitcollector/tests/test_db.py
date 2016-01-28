@@ -19,28 +19,57 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import os
-
-from setuptools import setup, find_packages
-from gitcollector import settings as config
+import pytest
+import gitcollector.utils_db as db
 
 __author__ = 'Alejandro F. Carrera'
 
+red = None
 
-def read(name):
-    return open(os.path.join(os.path.dirname(__file__), name)).read()
 
-setup(
-    name=config.GC_NAME,
-    version=config.GC_VERSION,
-    author="Alejandro F. Carrera",
-    author_email="alej4fc@gmail.com",
-    description="Project to get data through the git protocol",
-    license="Apache 2",
-    keywords="inner-source collector git git-collector",
-    url="https://github.com/alejandrofcarrera/git-collector",
-    packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['redis', 'flask', 'flask_negotiate', 'validators', 'pytest'],
-    scripts=['mgitcollector'],
-    classifiers=[]
-)
+# Must be passed unless all tests will fail
+def test_config_good():
+    global red
+    red_k = ['r', 'u', 'b', 'c', 'cb', 'cc']
+    red_k = set(red_k)
+    try:
+        red = db.rd_connect()
+        [red[i].flushdb() for i in red]
+    except EnvironmentError as e:
+        red = None
+    assert isinstance(red, dict)
+    red_keys = set(red.keys())
+    assert not len(red_keys.difference(red_k))
+
+
+def test_no_repositories():
+    global red
+    rep = db.get_repositories(red)
+    assert not len(rep)
+
+
+def test_no_active_repositories():
+    global red
+    rep = db.get_repositories_active(red)
+    assert not len(rep)
+
+
+def test_get_bad_repository_id():
+    global red
+    with pytest.raises(db.CollectorException):
+        db.get_repository(red, 'a')
+
+
+def test_set_bad_repository_id():
+    global red
+    with pytest.raises(db.CollectorException):
+        db.set_repository(red, 'a', None)
+
+
+def test_active_bad_repository_id():
+    global red
+    with pytest.raises(db.CollectorException):
+        db.act_repository(red, 'a', None)
+
+
+
