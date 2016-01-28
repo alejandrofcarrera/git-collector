@@ -143,9 +143,10 @@ class Collector(object):
 
                 # Save repository at redis
                 try:
-                    r_id = utils_db.set_repositories(self.rd, param)
-                    self.list.add(r_id)
-                    self.create_task()
+                    r_id, st = utils_db.set_repositories(self.rd, param)
+                    if st == 'active':
+                        self.list.add(r_id)
+                        self.create_task()
                     return make_response(json.dumps({
                         "URL": param.get('url'),
                         "ID": r_id,

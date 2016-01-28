@@ -148,9 +148,10 @@ def set_repositories(redis_instance, parameters):
     if 'password' in parameters:
         r['password'] = parameters.get('password')
     redis_instance.get('r').hmset(r_id, r)
-    redis_instance.get('r').sadd('active', r_id)
+    if r['state'] == 'active':
+        redis_instance.get('r').sadd('active', r_id)
     redis_instance.get('u').set(r.get('url'), r_id)
-    return r_id
+    return r_id, r['state']
 
 
 #########################################################
