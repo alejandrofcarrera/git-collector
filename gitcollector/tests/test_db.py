@@ -55,74 +55,113 @@ def test_config_good():
         se.GC_DB_COMMITTER_COMMIT
     ]
     red_dbs = set(red_dbs)
+
+    # Test if each database has different
+    # database number to create connection
     assert len(red_dbs) == 6
-    red_k = ['r', 'u', 'b', 'c', 'cb', 'cc']
-    red_k = set(red_k)
+
+    # Test redis connection
+    # and clean all databases
     try:
         red = db.rd_connect()
         clear_database()
     except EnvironmentError as e:
         red = None
     assert isinstance(red, dict)
+
+    # Test if each database connection has
+    # been created successfully
+    red_k = ['r', 'u', 'b', 'c', 'cb', 'cc']
+    red_k = set(red_k)
     red_keys = set(red.keys())
     assert not len(red_keys.difference(red_k))
 
 
 def test_no_repositories():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
+    # Test there are not repositories
     rep_list = db.get_repositories(red)
     assert not len(rep_list)
 
 
 def test_no_active_repositories():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
+    # Test there are not active repositories
     rep_list = db.get_repositories_active(red)
     assert not len(rep_list)
 
 
 def test_get_bad_repository_id():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
+    # Test raise Exception at get repository
+    # using identifier not valid
     with pytest.raises(db.CollectorException):
         db.get_repository(red, 'a')
 
 
 def test_set_bad_repository_id():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
+    # Test raise Exception at set repository
+    # parameter using identifier not valid
     with pytest.raises(db.CollectorException):
         db.set_repository(red, 'a', None)
 
 
 def test_active_bad_repository_id():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
+    # Test raise Exception at activate repository
     with pytest.raises(db.CollectorException):
         db.act_repository(red, 'a', None)
 
 
 def test_create_active_repository():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
     rep_id, rep_st = db.set_repositories(red, {
         'url': rep
     })
     rep_info_waited = {
         'url': rep, 'state': 'active', 'id': rep_id
     }
+
+    # Test identifier has been created and
+    # it is a string and not empty
     assert isinstance(rep_id, str)
     assert rep_id != ''
+
+    # Test repository state is active
     assert rep_st == 'active'
 
-    # Test Get Repository with valid id
+    # Test repository info is the same at redis side
     rep_info = db.get_repository(red, rep_id)
     assert cmp(rep_info, rep_info_waited) == 0
     rep_info = db.get_repository(red, rep_id, True)
     assert cmp(rep_info, rep_info_waited) == 0
 
-    # Test only one repository is alive
+    # Test this repository is the one alive
     rep_info = db.get_repositories(red)
     assert len(rep_info) == 1
     rep_info = rep_info[0]
     assert cmp(rep_info, rep_info_waited) == 0
 
-    # Test only one repository is active
+    # Test this repository is the one active
     rep_info = db.get_repositories_active(red)
     assert len(rep_info) == 1
     rep_info = rep_info.pop()
@@ -130,10 +169,16 @@ def test_create_active_repository():
 
 
 def test_set_exist_url_repository():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
     rep_info = db.get_repositories(red)
     assert len(rep_info) == 1
     rep_info = rep_info[0]
+
+    # Test raise Exception at save an url
+    # has been already saved at redis
     with pytest.raises(db.CollectorException):
         db.set_repository(red, rep_info.get('id'), {
             'url': rep_info.get('url')
@@ -141,7 +186,10 @@ def test_set_exist_url_repository():
 
 
 def test_set_parameters_repository():
+
+    # Test redis is connected
     assert isinstance(red, dict)
+
     rep_id = db.get_repositories_active(red)
     assert len(rep_id) == 1
     rep_id = rep_id.pop()
@@ -152,26 +200,42 @@ def test_set_parameters_repository():
         'state': 'nonactive'
     })
     rep_info = db.get_repository(red, rep_id)
+
+    # Test key_not_valid is not at redis
     assert 'key_not_valid' not in rep_info
+
+    # Test password has not been returned by method
     assert 'password' not in rep_info
+
+    # Test repository state is active
     assert rep_info.get('state') == 'active'
+
+    # Test user has been saved successfully
     assert rep_info.get('user') == 'usertest'
+
+    # Test password has been returned by method
     rep_info = db.get_repository(red, rep_id, True)
     assert rep_info.get('password') == 'passwordtest'
 
 
 def test_deactivate_repository():
+
+    # Test redis is connected
     assert isinstance(red, dict)
     rep_id = db.get_repositories_active(red)
     assert len(rep_id) == 1
     rep_id = rep_id.pop()
     db.act_repository(red, rep_id, 'nonactive')
+
+    # Test there are no active repositories
     rep_id = db.get_repositories_active(red)
     assert len(rep_id) == 0
     clear_database()
 
 
 def test_create_nonactive_repository():
+
+    # Test redis is connected
     assert isinstance(red, dict)
     rep_id, rep_st = db.set_repositories(red, {
         'url': rep,
@@ -180,22 +244,28 @@ def test_create_nonactive_repository():
     rep_info_waited = {
         'url': rep, 'state': 'nonactive', 'id': rep_id
     }
+
+    # Test identifier has been created and
+    # it is a string and not empty
     assert isinstance(rep_id, str)
     assert rep_id != ''
+
+    # Test repository state is active
     assert rep_st == 'nonactive'
 
-    # Test Get Repository with valid id
+    # Test repository info is the same at redis side
     rep_info = db.get_repository(red, rep_id)
     assert cmp(rep_info, rep_info_waited) == 0
     rep_info = db.get_repository(red, rep_id, True)
     assert cmp(rep_info, rep_info_waited) == 0
 
-    # Test only one repository is alive
+    # Test this repository is the one alive
     rep_info = db.get_repositories(red)
     assert len(rep_info) == 1
     rep_info = rep_info[0]
     assert cmp(rep_info, rep_info_waited) == 0
 
-    # Test no repository is active
+    # Test there are no active repositories
     rep_info = db.get_repositories_active(red)
     assert len(rep_info) == 0
+    clear_database()
