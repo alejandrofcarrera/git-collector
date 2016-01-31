@@ -27,22 +27,28 @@ import json
 __author__ = 'Alejandro F. Carrera'
 
 
+def json_response(json_object, state=200):
+    r = make_response(json.dumps(json_object), state)
+    r.headers['Content-Type'] = 'application/json'
+    return r
+
+
 def generate_pwd_error():
-    return make_response(json.dumps({
+    return json_response({
         "Error": "Password is not valid."
-    }), 401)
+    }, 401)
 
 
 def generate_json_error():
-    return make_response(json.dumps({
+    return json_response({
         "Error": "JSON at request body is bad format."
-    }), 422)
+    }, 422)
 
 
 def generate_repo_error(msg, status):
-    return make_response(json.dumps({
+    return json_response({
         "Error": msg
-    }), status)
+    }, status)
 
 
 #########################################################

@@ -95,11 +95,11 @@ class Collector(object):
         @self.app.route('/api', methods=['GET'])
         @produces('application/json')
         def api():
-            return make_response(json.dumps({
+            return utils_http.json_response({
                 "Name": config.GC_LONGNAME,
                 "Version": config.GC_VERSION,
                 "Password": config.GC_USE_PASSWORD
-            }), 200)
+            })
 
         # Get and update information about repositories
         @self.app.route('/api/repositories', methods=['GET', 'POST'])
@@ -114,9 +114,9 @@ class Collector(object):
                 return utils_http.generate_pwd_error()
 
             if request.method == 'GET':
-                return make_response(json.dumps(
-                    utils_db.get_repositories(self.rd)
-                ), 200)
+                return utils_http.json_response(
+                    utils_db.get_repositories(self.rd), 200
+                )
             else:
 
                 # Check if JSON is available
@@ -147,11 +147,11 @@ class Collector(object):
                     if st == 'active':
                         self.list.add(r_id)
                         self.create_task()
-                    return make_response(json.dumps({
+                    return utils_http.json_response({
                         "URL": param.get('url'),
                         "ID": r_id,
                         "Status": "Added"
-                    }), 201)
+                    }, 201)
                 except utils_db.CollectorException as c3:
                     return utils_http.generate_repo_error(
                         c3.args[0].get('msg'), c3.args[0].get('code')
@@ -173,7 +173,7 @@ class Collector(object):
                 try:
                     return make_response(json.dumps(
                         utils_db.get_repository(self.rd, r_id)
-                    ), 200)
+                    ))
                 except Exception as c5:
                     return utils_http.generate_repo_error(
                         c5.args[0].get('msg'), c5.args[0].get('code')
@@ -206,10 +206,10 @@ class Collector(object):
                         if flag_update:
                             self.list.add(r_id)
                             self.create_task()
-                        return make_response(json.dumps({
+                        return utils_http.json_response({
                             "ID": r_id,
                             "Status": "Updated"
-                        }))
+                        })
 
                     # Catch exception
                     except Exception as c7:
@@ -246,10 +246,10 @@ class Collector(object):
                 if st == 'active':
                     self.list.add(r_id)
                     self.create_task()
-                return make_response(json.dumps({
+                return utils_http.json_response({
                     "ID": r_id,
                     "Status": "Activated" if st == 'active' else 'Deactivated'
-                }))
+                })
 
             # Catch exception
             except Exception as c10:
