@@ -28,7 +28,10 @@ __author__ = 'Alejandro F. Carrera'
 
 
 def json_response(json_object, state=200):
-    r = make_response(json.dumps(json_object), state)
+    obj = json_object
+    if isinstance(obj, set):
+        obj = list(obj)
+    r = make_response(json.dumps(obj), state)
     r.headers['Content-Type'] = 'application/json'
     return r
 
