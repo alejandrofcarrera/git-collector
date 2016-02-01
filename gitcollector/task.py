@@ -122,6 +122,14 @@ def upd_commits_from_branches(redis_instance, rep_info, branches):
         # Generate branch id
         br_id = utils_db.create_branch_id_from_repository(rep_info, i)
 
+        # Get old information
+        if not redis_instance.get('b').exists(br_id):
+            br_info_col = set()
+        else:
+            br_info_col = set(eval(
+                redis_instance.get('b').hgetall(br_id).get('contributors')
+            ))
+
         # Get commits from branch
         # ids (sha) and old data structure
         com_br_upd = get_commits_from_branch(
@@ -129,7 +137,6 @@ def upd_commits_from_branches(redis_instance, rep_info, branches):
         )
         com_br = {}
         com_br_new = {}
-        br_info_col = set()
         new_ids = com_br_upd.get('add')
         new_info = com_br_upd.get('add_info')
         old_info = com_br_upd.get('info')
@@ -138,7 +145,7 @@ def upd_commits_from_branches(redis_instance, rep_info, branches):
 
         # Get old commits to create structure
         if len(old_info.keys()):
-            [com_br.update({i: long(old_info[i])}) for i in mod_info]
+            [com_br.update({j: long(old_info[j])}) for j in mod_info]
 
         # Delete old structure of commits
         if len(new_ids) > 0 or len(del_info) > 0:
@@ -170,17 +177,19 @@ def upd_commits_from_branches(redis_instance, rep_info, branches):
                 com_br_new[user_key] = {}
             com_br_new[user_key].update({br_id + ':' + j: co_info.get('time')})
 
+        # Set values at Redis Structure - Users
         if len(new_ids):
-
-            # Set values at Redis Structure - Users
-            for i in com_br_new:
-                utils_db.inject_user_commits(redis_instance, i, com_br_new[i])
+            for j in com_br_new:
+                utils_db.inject_user_commits(redis_instance, j, com_br_new[j])
 
         # Delete commits from redis
         for j in del_info:
 
+            # Generate commit id
+            co_id = utils_db.create_commit_id_from_repo(rep_info, j)
+
             # Get commit identifier (sha) + info
-            co_info = redis_instance.get('c').hgetall(j)
+            co_info = redis_instance.get('c').hgetall(co_id)
 
             # Get email from commit and add as contributor
             co_em = co_info.get('email').lower()
@@ -194,7 +203,7 @@ def upd_commits_from_branches(redis_instance, rep_info, branches):
                 br_us_co = redis_instance.get('cc').zrange(j, 0, -1)
                 br_com = filter(lambda x: str(x).startswith(br_id), br_us_co)
                 if not len(br_com):
-                    col_tmp.remove(i)
+                    col_tmp.remove(j)
             br_info_col = col_tmp
 
         # Inject commits to branch from data structure filled
@@ -204,7 +213,7 @@ def upd_commits_from_branches(redis_instance, rep_info, branches):
         # Insert information to branch
         redis_instance.get('b').hmset(br_id, {
             'name': i,
-            'contributors': br_info_col
+            'contributors': list(br_info_col)
         })
 
 

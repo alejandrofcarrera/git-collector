@@ -19,14 +19,13 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-from flask import request, make_response, Flask
+from flask import request, Flask
 from flask_negotiate import produces, consumes
 from task import CollectorTask
 import settings as config
 import utils_http
 import threading
 import utils_db
-import json
 import os
 
 __author__ = 'Alejandro F. Carrera'
@@ -95,11 +94,11 @@ class Collector(object):
         @self.app.route('/api', methods=['GET'])
         @produces('application/json')
         def api():
-            return make_response(json.dumps({
+            return utils_http.json_response({
                 "Name": config.GC_LONGNAME,
                 "Version": config.GC_VERSION,
                 "Password": config.GC_USE_PASSWORD
-            }), 200)
+            })
 
         # Get and update information about repositories
         @self.app.route('/api/repositories', methods=['GET', 'POST'])
@@ -114,9 +113,9 @@ class Collector(object):
                 return utils_http.generate_pwd_error()
 
             if request.method == 'GET':
-                return make_response(json.dumps(
-                    utils_db.get_repositories(self.rd)
-                ), 200)
+                return utils_http.json_response(
+                    utils_db.get_repositories(self.rd), 200
+                )
             else:
 
                 # Check if JSON is available
@@ -143,14 +142,15 @@ class Collector(object):
 
                 # Save repository at redis
                 try:
-                    r_id = utils_db.set_repositories(self.rd, param)
-                    self.list.add(r_id)
-                    self.create_task()
-                    return make_response(json.dumps({
+                    r_id, st = utils_db.set_repositories(self.rd, param)
+                    if st == 'active':
+                        self.list.add(r_id)
+                        self.create_task()
+                    return utils_http.json_response({
                         "URL": param.get('url'),
                         "ID": r_id,
                         "Status": "Added"
-                    }), 201)
+                    }, 201)
                 except utils_db.CollectorException as c3:
                     return utils_http.generate_repo_error(
                         c3.args[0].get('msg'), c3.args[0].get('code')
@@ -170,9 +170,9 @@ class Collector(object):
 
             if request.method == 'GET':
                 try:
-                    return make_response(json.dumps(
+                    return utils_http.json_response(
                         utils_db.get_repository(self.rd, r_id)
-                    ), 200)
+                    )
                 except Exception as c5:
                     return utils_http.generate_repo_error(
                         c5.args[0].get('msg'), c5.args[0].get('code')
@@ -205,10 +205,10 @@ class Collector(object):
                         if flag_update:
                             self.list.add(r_id)
                             self.create_task()
-                        return make_response(json.dumps({
+                        return utils_http.json_response({
                             "ID": r_id,
                             "Status": "Updated"
-                        }))
+                        })
 
                     # Catch exception
                     except Exception as c7:
@@ -245,13 +245,148 @@ class Collector(object):
                 if st == 'active':
                     self.list.add(r_id)
                     self.create_task()
-                return make_response(json.dumps({
+                return utils_http.json_response({
                     "ID": r_id,
                     "Status": "Activated" if st == 'active' else 'Deactivated'
-                }))
+                })
 
             # Catch exception
             except Exception as c10:
                 return utils_http.generate_repo_error(
                     c10.args[0].get('msg'), c10.args[0].get('code')
                 )
+
+        # Repository's Commits
+        @self.app.route('/api/repositories/<string:r_id>/commits', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def repository_commits(r_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+
+            try:
+                return utils_http.json_response(
+                    utils_db.get_commits_from_repository(self.rd, r_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
+
+        # Commits' information
+        @self.app.route('/api/repositories/<string:r_id>/commits/<string:c_id>', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def repository_commit(r_id, c_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+
+            try:
+                return utils_http.json_response(
+                    utils_db.get_commit_from_repository(self.rd, r_id, c_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
+
+        # Repository's Branches
+        @self.app.route('/api/repositories/<string:r_id>/branches', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def repository_branches(r_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+
+            try:
+                return utils_http.json_response(
+                    utils_db.get_branches_id_from_repository(self.rd, r_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
+
+        # Branch's Information
+        @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def repository_branch(r_id, b_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+
+            try:
+                return utils_http.json_response(
+                    utils_db.get_branch_from_repository(self.rd, r_id, b_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
+
+        # Branches' Commits
+        @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>/commits', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def branch_commits(r_id, b_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+
+            try:
+                return utils_http.json_response(
+                    utils_db.get_commits_from_branch_id(self.rd, r_id, b_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
+
+        # Contributors
+        @self.app.route('/api/contributors', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def contributor():
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+            return utils_http.json_response(
+                utils_db.get_contributors(self.rd)
+            )
+
+        # Contributors' Information
+        @self.app.route('/api/contributors/<string:co_id>', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def contributors(co_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+            return utils_http.json_response(
+                utils_db.get_contributor(self.rd, co_id)
+            )

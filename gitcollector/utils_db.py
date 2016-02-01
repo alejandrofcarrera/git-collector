@@ -100,6 +100,21 @@ EXCEP_REPOSITORY_NOT_FOUND = {
     'code': 404
 }
 
+EXCEP_COMMIT_NOT_FOUND = {
+    'msg': 'Commit does not exist.',
+    'code': 404
+}
+
+EXCEP_CONTRIBUTOR_NOT_FOUND = {
+    'msg': 'Contributor does not exist.',
+    'code': 404
+}
+
+EXCEP_BRANCH_NOT_FOUND = {
+    'msg': 'Branch does not exist.',
+    'code': 404
+}
+
 EXCEP_REPOSITORY_EXISTS = {
     'msg': 'Repository exists. Please update or remove it.',
     'code': 422
@@ -148,9 +163,10 @@ def set_repositories(redis_instance, parameters):
     if 'password' in parameters:
         r['password'] = parameters.get('password')
     redis_instance.get('r').hmset(r_id, r)
-    redis_instance.get('r').sadd('active', r_id)
+    if r['state'] == 'active':
+        redis_instance.get('r').sadd('active', r_id)
     redis_instance.get('u').set(r.get('url'), r_id)
-    return r_id
+    return r_id, r['state']
 
 
 #########################################################
@@ -200,11 +216,68 @@ def act_repository(redis_instance, repository_id, state):
 
 #########################################################
 
+def get_commits_from_repository(redis_instance, repository_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+
+    res = set()
+    commits = redis_instance.get('c').keys(repository_id + ':*')
+    [res.add(x.split(':')[1]) for x in commits]
+    return res
+
+
+def get_commits_from_branch_id(redis_instance, repository_id, branch_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+
+    br_id = repository_id + ':' + branch_id
+    if not redis_instance.get('b').exists(br_id):
+        raise CollectorException(EXCEP_BRANCH_NOT_FOUND)
+
+    res = set()
+    commits = redis_instance.get('cb').zrange(br_id, 0, -1)
+    [res.add(x.split(':')[1]) for x in commits]
+    return res
+
+
+def get_commit_from_repository(redis_instance, repository_id, commit_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+
+    co_id = repository_id + ':' + commit_id
+
+    if not redis_instance.get('c').exists(co_id):
+        raise CollectorException(EXCEP_COMMIT_NOT_FOUND)
+
+    return redis_instance.get('c').hgetall(co_id)
+
 
 def get_branches_from_repository(redis_instance, repository_id):
     res = set()
     branches = redis_instance.get('b').keys(repository_id + ':*')
     [res.add(base64.b16decode(x.split(':')[1])) for x in branches]
+    return res
+
+
+def get_branch_from_repository(redis_instance, repository_id, branch_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+
+    br_id = repository_id + ':' + branch_id
+
+    if not redis_instance.get('b').exists(br_id):
+        raise CollectorException(EXCEP_COMMIT_NOT_FOUND)
+
+    return redis_instance.get('b').hgetall(br_id)
+
+
+def get_branches_id_from_repository(redis_instance, repository_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+
+    res = set()
+    branches = redis_instance.get('b').keys(repository_id + ':*')
+    [res.add(x.split(':')[1]) for x in branches]
     return res
 
 
@@ -260,6 +333,31 @@ def del_commits_from_repository(redis_instance, repository_id, comm_list):
         )
     com = list(filter(lambda x: x not in branch_co, comm_list))
     redis_instance.get('c').delete(*com)
+
+
+#########################################################
+
+
+def get_contributors(redis_instance):
+    return redis_instance.get('cc').keys('*')
+
+
+def get_contributor(redis_instance, contributor_id):
+    if not redis_instance.get('cc').exists(contributor_id):
+        raise CollectorException(EXCEP_CONTRIBUTOR_NOT_FOUND)
+
+    us = {
+        'email': base64.b16decode(contributor_id)
+    }
+    com = redis_instance.get('cc').zrange(
+        contributor_id, 0, -1, withscores=True
+    )
+    us['commits'] = len(com)
+    if len(com):
+        us['first_commit_at'] = str(long(com[0][1]))
+        us['last_commit_at'] = str(long(com[-1][1]))
+
+    return us
 
 
 #########################################################
