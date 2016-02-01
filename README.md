@@ -46,6 +46,7 @@ Where GC_VERSION is API version and GC_USE_PASSWORD is True or False
 |HTTP Method|Path|Status|
 |:---------|:----------|:----------|
 |GET|/api/repositories|200|
+|GET|/api/contributors|200|
 |POST|/api/repositories|201 or 422|
 
 **POST Request:**
@@ -63,6 +64,8 @@ Where GC_VERSION is API version and GC_USE_PASSWORD is True or False
 
 Note: Repository password is not returned at any case by security.
 
+```["contributor_id", ...]```
+
 **Response (201):**
 
 ```{"URL": "...", "Status": "Added", "ID": "repository_id"}```
@@ -72,6 +75,22 @@ Note: Repository password is not returned at any case by security.
 ```{"Error": "Repository exists. Please update or remove it."}```
 
 ```{"Error": "JSON at request body is bad format."}```
+
+==============
+
+|HTTP Method|Path|Status|
+|:---------|:----------|:----------|
+|GET|/api/contributors/contributor_id|200 or 404|
+
+**Response (200):**
+
+```{"email": "...", "commits": "...", "first_commit_at": "...", "last_commit_at": "..."}```
+
+Note: if contributor have not committed anything, last and first_commit_at will not be returned.
+
+**Response (404):**
+
+```{"Error": "Contributor does not exist."}```
 
 ==============
 
