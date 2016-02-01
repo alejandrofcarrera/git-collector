@@ -145,7 +145,7 @@ def upd_commits_from_branches(redis_instance, rep_info, branches):
 
         # Get old commits to create structure
         if len(old_info.keys()):
-            [com_br.update({i: long(old_info[i])}) for i in mod_info]
+            [com_br.update({j: long(old_info[j])}) for j in mod_info]
 
         # Delete old structure of commits
         if len(new_ids) > 0 or len(del_info) > 0:
