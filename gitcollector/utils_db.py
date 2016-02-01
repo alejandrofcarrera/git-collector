@@ -105,6 +105,11 @@ EXCEP_COMMIT_NOT_FOUND = {
     'code': 404
 }
 
+EXCEP_CONTRIBUTOR_NOT_FOUND = {
+    'msg': 'Contributor does not exist.',
+    'code': 404
+}
+
 EXCEP_BRANCH_NOT_FOUND = {
     'msg': 'Branch does not exist.',
     'code': 404
@@ -328,6 +333,31 @@ def del_commits_from_repository(redis_instance, repository_id, comm_list):
         )
     com = list(filter(lambda x: x not in branch_co, comm_list))
     redis_instance.get('c').delete(*com)
+
+
+#########################################################
+
+
+def get_contributors(redis_instance):
+    return redis_instance.get('cc').keys('*')
+
+
+def get_contributor(redis_instance, contributor_id):
+    if not redis_instance.get('cc').exists(contributor_id):
+        raise CollectorException(EXCEP_CONTRIBUTOR_NOT_FOUND)
+
+    us = {
+        'email': base64.b16decode(contributor_id)
+    }
+    com = redis_instance.get('cc').zrange(
+        contributor_id, 0, -1, withscores=True
+    )
+    us['commits'] = len(com)
+    if len(com):
+        us['first_commit_at'] = str(long(com[0][1]))
+        us['last_commit_at'] = str(long(com[-1][1]))
+
+    return us
 
 
 #########################################################

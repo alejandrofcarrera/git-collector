@@ -269,10 +269,9 @@ class Collector(object):
                 return utils_http.generate_pwd_error()
 
             try:
-                r = utils_http.json_response(
+                return utils_http.json_response(
                     utils_db.get_commits_from_repository(self.rd, r_id)
                 )
-                return r
             except Exception as c5:
                 return utils_http.generate_repo_error(
                     c5.args[0].get('msg'), c5.args[0].get('code')
@@ -291,10 +290,9 @@ class Collector(object):
                 return utils_http.generate_pwd_error()
 
             try:
-                r = utils_http.json_response(
+                return utils_http.json_response(
                     utils_db.get_commit_from_repository(self.rd, r_id, c_id)
                 )
-                return r
             except Exception as c5:
                 return utils_http.generate_repo_error(
                     c5.args[0].get('msg'), c5.args[0].get('code')
@@ -313,10 +311,9 @@ class Collector(object):
                 return utils_http.generate_pwd_error()
 
             try:
-                r = utils_http.json_response(
+                return utils_http.json_response(
                     utils_db.get_branches_id_from_repository(self.rd, r_id)
                 )
-                return r
             except Exception as c5:
                 return utils_http.generate_repo_error(
                     c5.args[0].get('msg'), c5.args[0].get('code')
@@ -335,10 +332,9 @@ class Collector(object):
                 return utils_http.generate_pwd_error()
 
             try:
-                r = utils_http.json_response(
+                return utils_http.json_response(
                     utils_db.get_branch_from_repository(self.rd, r_id, b_id)
                 )
-                return r
             except Exception as c5:
                 return utils_http.generate_repo_error(
                     c5.args[0].get('msg'), c5.args[0].get('code')
@@ -357,11 +353,40 @@ class Collector(object):
                 return utils_http.generate_pwd_error()
 
             try:
-                r = utils_http.json_response(
+                return utils_http.json_response(
                     utils_db.get_commits_from_branch_id(self.rd, r_id, b_id)
                 )
-                return r
             except Exception as c5:
                 return utils_http.generate_repo_error(
                     c5.args[0].get('msg'), c5.args[0].get('code')
                 )
+
+        # Contributors
+        @self.app.route('/api/contributors', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def contributor():
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+            return utils_http.json_response(
+                utils_db.get_contributors(self.rd)
+            )
+
+        # Contributors' Information
+        @self.app.route('/api/contributors/<string:co_id>', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def contributors(co_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+            return utils_http.json_response(
+                utils_db.get_contributor(self.rd, co_id)
+            )
