@@ -39,7 +39,10 @@ def execute_collector():
         __collector.update_information("groups")
         __collector.update_information("projects")
     except Exception as e:
-        config.print_error(e.message)
+        if e.message == "":
+            config.print_error(e.strerror)
+        else:
+            config.print_error(e.message)
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     config.print_message("* %s (%s) Finished - %s" % (config.LONGNAME, config.VERSION, st))
 
