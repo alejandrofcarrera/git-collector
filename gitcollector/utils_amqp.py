@@ -54,8 +54,12 @@ def send(message, event):
         sent = channel.basic_publish(
             exchange=config.GC_AMQP_EXCNAME,
             routing_key=routing_key,
-            body=str(json.dumps(message)),
-            properties=BasicProperties({}),
+            body=json.dumps(message, ensure_ascii=False),
+            properties=BasicProperties(
+                content_type='application/psr.sdh.gitcollector+json',
+                content_encoding='utf-8',
+                delivery_mode=2
+            ),
             mandatory=True
         )
         if not sent:
