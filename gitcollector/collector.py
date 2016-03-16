@@ -156,8 +156,8 @@ class Collector(object):
                         c3.args[0].get('msg'), c3.args[0].get('code')
                     )
 
-        # Get and Update Repository
-        @self.app.route('/api/repositories/<string:r_id>', methods=['GET', 'PUT'])
+        # Get Repository
+        @self.app.route('/api/repositories/<string:r_id>', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
         def repository(r_id):
@@ -168,53 +168,14 @@ class Collector(object):
             except Exception as c4:
                 return utils_http.generate_pwd_error()
 
-            if request.method == 'GET':
-                try:
-                    return utils_http.json_response(
-                        utils_db.get_repository(self.rd, r_id)
-                    )
-                except Exception as c5:
-                    return utils_http.generate_repo_error(
-                        c5.args[0].get('msg'), c5.args[0].get('code')
-                    )
-
-            else:
-
-                if request.method == 'PUT':
-
-                    # Check if JSON is available
-                    try:
-                        param = request.json
-                    except Exception as c6:
-                        return utils_http.generate_json_error()
-
-                    # Check if URL is valid
-                    flag_update = False
-                    if 'url' in param:
-                        flag_update = True
-                        if not utils_http.check_url(param.get('url')):
-                            return utils_http.generate_json_error()
-
-                    # Check if Username is available and valid
-                    if 'user' in param:
-                        if not utils_db.check_git_username(param.get('user')):
-                            return utils_http.generate_json_error()
-
-                    try:
-                        utils_db.set_repository(self.rd, r_id, param)
-                        if flag_update:
-                            self.list.add(r_id)
-                            self.create_task()
-                        return utils_http.json_response({
-                            "ID": r_id,
-                            "Status": "Updated"
-                        })
-
-                    # Catch exception
-                    except Exception as c7:
-                        return utils_http.generate_repo_error(
-                            c7.args[0].get('msg'), c7.args[0].get('code')
-                        )
+            try:
+                return utils_http.json_response(
+                    utils_db.get_repository(self.rd, r_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
 
         # De/activate Repository
         @self.app.route('/api/repositories/<string:r_id>/state', methods=['POST'])
