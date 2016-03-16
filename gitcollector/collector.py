@@ -97,7 +97,13 @@ class Collector(object):
             return utils_http.json_response({
                 "Name": config.GC_LONGNAME,
                 "Version": config.GC_VERSION,
-                "Password": config.GC_USE_PASSWORD
+                "Password": config.GC_USE_PASSWORD,
+                "Notifications": {
+                    "brokerHost": config.GC_AMQP_BROKER_HOST,
+                    "brokerPort": config.GC_AMQP_BROKER_PORT,
+                    "virtualHost": config.GC_AMQP_VIRTUAL_HOST,
+                    "exchangeName": config.GC_AMQP_EXCNAME
+                }
             })
 
         # Get and update information about repositories
