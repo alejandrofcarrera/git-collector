@@ -266,7 +266,7 @@ def get_branch_from_repository(redis_instance, repository_id, branch_id):
     br_id = repository_id + ':' + branch_id
 
     if not redis_instance.get('b').exists(br_id):
-        raise CollectorException(EXCEP_COMMIT_NOT_FOUND)
+        raise CollectorException(EXCEP_BRANCH_NOT_FOUND)
 
     return redis_instance.get('b').hgetall(br_id)
 
