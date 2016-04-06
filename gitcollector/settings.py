@@ -64,7 +64,7 @@ GC_AMQP_VIRTUAL_HOST = os.environ.get("GC_MQ_VHOST", "/")
 GC_AMQP_EXCNAME = os.environ.get("GC_MQ_EXCNAME", "gitcollector")
 
 # Collector Password Auto-generated
-GC_USE_PASSWORD = True
+GC_USE_PASSWORD = int(os.environ.get("GC_PASSWORD", 0))
 GC_PASSWORD = gen_password() if GC_USE_PASSWORD else None
 
 logging.basicConfig(
