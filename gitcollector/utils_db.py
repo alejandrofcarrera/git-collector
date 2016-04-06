@@ -253,6 +253,8 @@ def get_commit_from_repository(redis_instance, repository_id, commit_id):
 
 
 def get_branches_from_repository(redis_instance, repository_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
     res = set()
     branches = redis_instance.get('b').keys(repository_id + ':*')
     [res.add(base64.b16decode(x.split(':')[1])) for x in branches]
@@ -281,61 +283,41 @@ def get_branches_id_from_repository(redis_instance, repository_id):
     return res
 
 
-def del_branches_from_id(redis_instance, repository_id, branch_name):
-
-    # Generate ID with Base64
-    br_id = create_branch_id_from_repository(repository_id, branch_name)
-
-    # Temporal save
-    br_con = eval(redis_instance.get('b').hget(br_id, 'contributors'))
-
-    # Delete containers at redis
-    redis_instance.get('b').delete(br_id)
-    redis_instance.get('cb').delete(br_id)
-
-    commits_to_del = set()
-
-    # Remove links with contributors
-    for i in br_con:
-        us_com = redis_instance.get('cc').smembers(i)
-        br_com = filter(lambda x: str(x).startswith(br_id), us_com)
-        [commits_to_del.add(
-            str(x).split(':')[0] + ':' + str(x).split(':')[2]
-        ) for x in br_com]
-        redis_instance.get('cc').srem(i, *commits_to_del)
-
-    return commits_to_del
-
-
 #########################################################
 
 
-def get_commits_from_branch(redis_instance, repository_id, branch_name):
-    br_id = create_branch_id_from_repository(repository_id, branch_name)
-    result = {}
-    if redis_instance.get('cb').exists(br_id):
-        result_tmp = dict(redis_instance.get('cb').zrange(
-            br_id, 0, -1, withscores=True)
-        )
-        result = {}
-        [result.update({
-            x.replace(repository_id + ':', ''): result_tmp[x]
-        }) for x in result_tmp.keys()]
-    return result
+def get_repository_contributors(redis_instance, repository_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
+
+    branches = redis_instance.get('cb').keys(repository_id + ':*')
+    contributors_list = get_contributors(redis_instance)
+    ret = []
+    for i in contributors_list:
+        co_contr = redis_instance.get('cc').zrange(i, 0, -1)
+        for j in branches:
+            if [s for s in co_contr if j in s]:
+                ret.append(i)
+                break
+    return ret
 
 
-def del_commits_from_repository(redis_instance, repository_id, comm_list):
-    branch_co = set()
-    branches = redis_instance.get('b').keys(repository_id + ':*')
-    for i in branches:
-        branch_co = branch_co.union(
-            set(redis_instance.get('cb').zrange(i, 0, -1))
-        )
-    com = list(filter(lambda x: x not in branch_co, comm_list))
-    redis_instance.get('c').delete(*com)
+def get_contributors_from_branch_id(redis_instance, repository_id, branch_id):
+    if not redis_instance.get('r').exists(repository_id):
+        raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
 
+    br_id = repository_id + ':' + branch_id
 
-#########################################################
+    if not redis_instance.get('b').exists(br_id):
+        raise CollectorException(EXCEP_BRANCH_NOT_FOUND)
+
+    contributors_list = get_contributors(redis_instance)
+    ret = []
+    for i in contributors_list:
+        co_contr = redis_instance.get('cc').zrange(i, 0, -1)
+        if [s for s in co_contr if br_id in s]:
+            ret.append(i)
+    return ret
 
 
 def get_contributors(redis_instance):
@@ -399,3 +381,54 @@ def inject_user_commits(redis_instance, user_id, commits):
             commits_push.append(i)
             c += 1
     redis_instance.get('cc').zadd(user_id, *commits_push)
+
+
+def del_branches_from_id(redis_instance, repository_id, branch_name):
+
+    # Generate ID with Base64
+    br_id = create_branch_id_from_repository(repository_id, branch_name)
+
+    # Temporal save
+    br_con = eval(redis_instance.get('b').hget(br_id, 'contributors'))
+
+    # Delete containers at redis
+    redis_instance.get('b').delete(br_id)
+    redis_instance.get('cb').delete(br_id)
+
+    commits_to_del = set()
+
+    # Remove links with contributors
+    for i in br_con:
+        us_com = redis_instance.get('cc').smembers(i)
+        br_com = filter(lambda x: str(x).startswith(br_id), us_com)
+        [commits_to_del.add(
+            str(x).split(':')[0] + ':' + str(x).split(':')[2]
+        ) for x in br_com]
+        redis_instance.get('cc').srem(i, *commits_to_del)
+
+    return commits_to_del
+
+
+def get_commits_from_branch(redis_instance, repository_id, branch_name):
+    br_id = create_branch_id_from_repository(repository_id, branch_name)
+    result = {}
+    if redis_instance.get('cb').exists(br_id):
+        result_tmp = dict(redis_instance.get('cb').zrange(
+            br_id, 0, -1, withscores=True)
+        )
+        result = {}
+        [result.update({
+            x.replace(repository_id + ':', ''): result_tmp[x]
+        }) for x in result_tmp.keys()]
+    return result
+
+
+def del_commits_from_repository(redis_instance, repository_id, comm_list):
+    branch_co = set()
+    branches = redis_instance.get('b').keys(repository_id + ':*')
+    for i in branches:
+        branch_co = branch_co.union(
+            set(redis_instance.get('cb').zrange(i, 0, -1))
+        )
+    com = list(filter(lambda x: x not in branch_co, comm_list))
+    redis_instance.get('c').delete(*com)

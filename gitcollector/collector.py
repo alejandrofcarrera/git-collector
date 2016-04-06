@@ -90,7 +90,7 @@ class Collector(object):
         def root():
             return api()
 
-        # Get information about Collector
+        # Collector's information
         @self.app.route('/api', methods=['GET'])
         @produces('application/json')
         def api():
@@ -106,7 +106,7 @@ class Collector(object):
                 }
             })
 
-        # Get and update information about repositories
+        # Get and update repositories' information
         @self.app.route('/api/repositories', methods=['GET', 'POST'])
         @produces('application/json')
         @consumes('application/json')
@@ -162,7 +162,7 @@ class Collector(object):
                         c3.args[0].get('msg'), c3.args[0].get('code')
                     )
 
-        # Get Repository
+        # Repository's information
         @self.app.route('/api/repositories/<string:r_id>', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
@@ -183,7 +183,28 @@ class Collector(object):
                     c5.args[0].get('msg'), c5.args[0].get('code')
                 )
 
-        # De/activate Repository
+        # Repository's contributors
+        @self.app.route('/api/repositories/<string:r_id>/contributors', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def repository_contributors(r_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+
+            try:
+                return utils_http.json_response(
+                    utils_db.get_repository_contributors(self.rd, r_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
+
+        # De/activate repository
         @self.app.route('/api/repositories/<string:r_id>/state', methods=['POST'])
         @produces('application/json')
         @consumes('application/json')
@@ -223,7 +244,7 @@ class Collector(object):
                     c10.args[0].get('msg'), c10.args[0].get('code')
                 )
 
-        # Repository's Commits
+        # Repository's commits
         @self.app.route('/api/repositories/<string:r_id>/commits', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
@@ -244,7 +265,7 @@ class Collector(object):
                     c5.args[0].get('msg'), c5.args[0].get('code')
                 )
 
-        # Commits' information
+        # Commit's information
         @self.app.route('/api/repositories/<string:r_id>/commits/<string:c_id>', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
@@ -265,7 +286,7 @@ class Collector(object):
                     c5.args[0].get('msg'), c5.args[0].get('code')
                 )
 
-        # Repository's Branches
+        # Repository's branches
         @self.app.route('/api/repositories/<string:r_id>/branches', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
@@ -286,7 +307,7 @@ class Collector(object):
                     c5.args[0].get('msg'), c5.args[0].get('code')
                 )
 
-        # Branch's Information
+        # Branch's information
         @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
@@ -307,7 +328,28 @@ class Collector(object):
                     c5.args[0].get('msg'), c5.args[0].get('code')
                 )
 
-        # Branches' Commits
+        # Branch's contributors
+        @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>/contributors', methods=['GET'])
+        @produces('application/json')
+        @consumes('application/json')
+        def branch_contributors(r_id, b_id):
+
+            # Check Password is mandatory and valid
+            try:
+                utils_http.check_password(request, self.password)
+            except Exception as c4:
+                return utils_http.generate_pwd_error()
+
+            try:
+                return utils_http.json_response(
+                    utils_db.get_contributors_from_branch_id(self.rd, r_id, b_id)
+                )
+            except Exception as c5:
+                return utils_http.generate_repo_error(
+                    c5.args[0].get('msg'), c5.args[0].get('code')
+                )
+
+        # Branch's commits
         @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>/commits', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
@@ -343,7 +385,7 @@ class Collector(object):
                 utils_db.get_contributors(self.rd)
             )
 
-        # Contributors' Information
+        # Contributor's Information
         @self.app.route('/api/contributors/<string:co_id>', methods=['GET'])
         @produces('application/json')
         @consumes('application/json')
