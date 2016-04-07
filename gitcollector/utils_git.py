@@ -119,22 +119,22 @@ def get_commit_information(pr_id, sha):
     os.chdir(config.GC_FOLDER + '/' + pr_id)
 
     # Get information from specific commit
-    res_opt = 'git log --pretty=format:"%aE %at" --shortstat -1 ' + sha
+    res_opt = 'git log --pretty=format:"%aE\n%at" --shortstat -1 ' + sha
     info_std = commands.getoutput(res_opt)
     commit = {}
 
-    # Get email and timestamp
+    # Get author and timestamp
     if type(info_std) is str:
         info_std = info_std.split("\n")
-        first_info = info_std[0].split(" ")
-        if len(info_std) > 1:
-            info_std = info_std[1]
+        commit['email'] = info_std[0]
+        commit['time'] = info_std[1]
+        if len(info_std) > 2:
+            info_std = info_std[2]
         else:
             info_std = ''
-        commit['email'] = first_info[0]
-        commit['time'] = long(first_info[1])
     else:
         info_std = ''
+
 
     # Create regular expression to search "number file pattern"
     __p = re.compile(r"\d+ file")
