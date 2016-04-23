@@ -42,6 +42,12 @@ def generate_pwd_error():
     }, 401)
 
 
+def generate_ctype_error():
+    return json_response({
+        "Error": "The server does not support the media type transmitted in the request."
+    }, 415)
+
+
 def generate_json_error():
     return json_response({
         "Error": "JSON at request body is bad format."

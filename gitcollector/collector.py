@@ -20,7 +20,7 @@
 """
 
 from flask import request, Flask
-from flask_negotiate import produces, consumes
+from flask_negotiate import produces
 from task import CollectorTask
 import settings as config
 import utils_http
@@ -109,7 +109,6 @@ class Collector(object):
         # Get and update repositories' information
         @self.app.route('/api/repositories', methods=['GET', 'POST'])
         @produces('application/json')
-        @consumes('application/json')
         def repositories():
 
             # Check Password is mandatory and valid
@@ -123,6 +122,9 @@ class Collector(object):
                     utils_db.get_repositories(self.rd), 200
                 )
             else:
+
+                if request.mimetype != 'application/json':
+                    return utils_http.generate_ctype_error()
 
                 # Check if JSON is available
                 try:
@@ -165,7 +167,6 @@ class Collector(object):
         # Repository's information
         @self.app.route('/api/repositories/<string:r_id>', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def repository(r_id):
 
             # Check Password is mandatory and valid
@@ -186,7 +187,6 @@ class Collector(object):
         # Repository's contributors
         @self.app.route('/api/repositories/<string:r_id>/contributors', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def repository_contributors(r_id):
 
             # Check Password is mandatory and valid
@@ -207,8 +207,10 @@ class Collector(object):
         # De/activate repository
         @self.app.route('/api/repositories/<string:r_id>/state', methods=['POST'])
         @produces('application/json')
-        @consumes('application/json')
         def repository_activation(r_id):
+
+            if request.mimetype != 'application/json':
+                return utils_http.generate_ctype_error()
 
             # Check Password is mandatory and valid
             try:
@@ -247,7 +249,6 @@ class Collector(object):
         # Repository's commits
         @self.app.route('/api/repositories/<string:r_id>/commits', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def repository_commits(r_id):
 
             # Check Password is mandatory and valid
@@ -268,7 +269,6 @@ class Collector(object):
         # Commit's information
         @self.app.route('/api/repositories/<string:r_id>/commits/<string:c_id>', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def repository_commit(r_id, c_id):
 
             # Check Password is mandatory and valid
@@ -289,7 +289,6 @@ class Collector(object):
         # Repository's branches
         @self.app.route('/api/repositories/<string:r_id>/branches', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def repository_branches(r_id):
 
             # Check Password is mandatory and valid
@@ -310,7 +309,6 @@ class Collector(object):
         # Branch's information
         @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def repository_branch(r_id, b_id):
 
             # Check Password is mandatory and valid
@@ -331,7 +329,6 @@ class Collector(object):
         # Branch's contributors
         @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>/contributors', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def branch_contributors(r_id, b_id):
 
             # Check Password is mandatory and valid
@@ -352,7 +349,6 @@ class Collector(object):
         # Branch's commits
         @self.app.route('/api/repositories/<string:r_id>/branches/<string:b_id>/commits', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def branch_commits(r_id, b_id):
 
             # Check Password is mandatory and valid
@@ -373,7 +369,6 @@ class Collector(object):
         # Contributors
         @self.app.route('/api/contributors', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def contributor():
 
             # Check Password is mandatory and valid
@@ -388,7 +383,6 @@ class Collector(object):
         # Contributor's Information
         @self.app.route('/api/contributors/<string:co_id>', methods=['GET'])
         @produces('application/json')
-        @consumes('application/json')
         def contributors(co_id):
 
             # Check Password is mandatory and valid
