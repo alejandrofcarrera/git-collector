@@ -292,16 +292,10 @@ def get_repository_contributors(redis_instance, repository_id):
     if not redis_instance.get('r').exists(repository_id):
         raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
 
-    branches = redis_instance.get('cb').keys(repository_id + ':*')
-    contributors_list = get_contributors(redis_instance)
     ret = []
-    for i in contributors_list:
-        co_contr = redis_instance.get('cc').zrange(i, 0, -1)
-        for j in branches:
-            if [s for s in co_contr if j in s]:
-                ret.append(i)
-                break
-    return ret
+    br_ids = [x.split(':')[1] for x in redis_instance.get('cb').keys(repository_id + ':*')]
+    [ret.extend(get_contributors_from_branch_id(redis_instance, repository_id, x)) for x in br_ids]
+    return set(ret)
 
 
 def get_contributors_from_branch_id(redis_instance, repository_id, branch_id):
@@ -313,13 +307,7 @@ def get_contributors_from_branch_id(redis_instance, repository_id, branch_id):
     if not redis_instance.get('b').exists(br_id):
         raise CollectorException(EXCEP_BRANCH_NOT_FOUND)
 
-    contributors_list = get_contributors(redis_instance)
-    ret = []
-    for i in contributors_list:
-        co_contr = redis_instance.get('cc').zrange(i, 0, -1)
-        if [s for s in co_contr if br_id in s]:
-            ret.append(i)
-    return ret
+    return eval(redis_instance.get('b').hget(br_id, 'contributors'))
 
 
 def get_contributors(redis_instance):
