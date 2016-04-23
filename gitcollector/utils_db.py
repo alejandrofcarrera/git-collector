@@ -270,7 +270,9 @@ def get_branch_from_repository(redis_instance, repository_id, branch_id):
     if not redis_instance.get('b').exists(br_id):
         raise CollectorException(EXCEP_BRANCH_NOT_FOUND)
 
-    return redis_instance.get('b').hgetall(br_id)
+    br = redis_instance.get('b').hgetall(br_id)
+    br['contributors'] = eval(br.get('contributors'))
+    return br
 
 
 def get_branches_id_from_repository(redis_instance, repository_id):
