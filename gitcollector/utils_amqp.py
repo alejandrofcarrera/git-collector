@@ -34,7 +34,8 @@ def print_sent(e):
 
 
 def print_error_amqp():
-    config.print_error(' * [Worker] AMQP configuration is not valid or it is not online')
+    config.print_error(' * [Worker] AMQP configuration is not valid or it is'
+                       'not online')
 
 
 class Event(object):
@@ -54,8 +55,8 @@ class Event(object):
     def event_data(self):
 
         values = dict()
-        values.update({k : list(v) if k is not 'repository' else v
-                       for k,v in self.fields.iteritems()})
+        values.update({k: list(v) if k is not 'repository' else v
+                       for k, v in self.fields.iteritems()})
         values['timestamp'] = long(time.time() * 1000)
 
         return values
@@ -63,7 +64,7 @@ class Event(object):
 
 class BasicEvent(Event):
 
-    def __init__(self, instance, name, elements):
+    def __init__(self, name, elements):
         super(BasicEvent, self).__init__()
         self.name = name
         self.fields[self.name] = set(elements)
@@ -79,30 +80,30 @@ class BasicEvent(Event):
 
 class RepositoryCreatedEvent(BasicEvent):
 
-    def __init__(self, instance, elements):
+    def __init__(self, elements):
         name = 'newRepositories'
-        super(RepositoryCreatedEvent, self).__init__(instance, name, elements)
+        super(RepositoryCreatedEvent, self).__init__(name, elements)
 
 
 class RepositoryDeletedEvent(BasicEvent):
 
-    def __init__(self, instance, elements):
+    def __init__(self, elements):
         name = 'deleteRepositories'
-        super(RepositoryDeletedEvent, self).__init__(instance, name, elements)
+        super(RepositoryDeletedEvent, self).__init__(name, elements)
 
 
 class CommitterCreatedEvent(BasicEvent):
 
-    def __init__(self, instance, elements):
+    def __init__(self, elements):
         name = 'newCommitters'
-        super(CommitterCreatedEvent, self).__init__(instance, name, elements)
+        super(CommitterCreatedEvent, self).__init__(name, elements)
 
 
 class CommitterDeletedEvent(BasicEvent):
 
-    def __init__(self, instance, elements):
-        self.name = 'deleteCommitters'
-        super(CommitterDeletedEvent, self).__init__(instance, elements)
+    def __init__(self, elements):
+        name = 'deleteCommitters'
+        super(CommitterDeletedEvent, self).__init__(name, elements)
 
 
 class RepositoryUpdatedEvent(Event):
@@ -123,8 +124,8 @@ class RepositoryUpdatedEvent(Event):
                                 type(event))
 
         self.fields.update({k: self.fields.get(k, v).union(v)
-         for k, v in event.fields.iteritems()
-         if k is not 'repository'})
+                            for k, v in event.fields.iteritems()
+                            if k is not 'repository'})
 
 
 class EventManager(object):
@@ -133,13 +134,13 @@ class EventManager(object):
 
         """
         Class that manage events, sending them in intervals of t_window
-        milliseconds
+        seconds
 
         Args:
             host: host address
             port: host listening port
             virtual_host:
-            t_window: time between sendings in milliseconds
+            t_window: time between sendings in seconds
         """
 
         self.broker_host = host
@@ -151,8 +152,6 @@ class EventManager(object):
         self._lock = threading.RLock()
 
     def start(self):
-
-        # TODO: Add locks
 
         self._lock.acquire(True)
         for event in self.events:
@@ -195,7 +194,7 @@ class EventManager(object):
                 virtual_host=self.virtual_host
             )
             connection = pika.BlockingConnection(connection_params)
-        except ConnectionClosed as e:
+        except ConnectionClosed:
             print_error_amqp()
             return
 

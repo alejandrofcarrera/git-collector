@@ -4,3 +4,4 @@ Flask
 Flask-Negotiate
 validators
 pytest
+pika
