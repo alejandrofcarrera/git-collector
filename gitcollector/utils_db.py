@@ -70,8 +70,9 @@ def redis_create_pool(db):
     try:
         __redis_db.client_list()
         return __redis_db
-    except Exception as e:
-        raise EnvironmentError(' * Redis configuration is not valid or it is not online')
+    except redis.RedisError:
+        raise EnvironmentError(' * Redis configuration is not valid or it is'
+                               'not online')
 
 
 def rd_connect():
@@ -156,7 +157,9 @@ def set_repositories(redis_instance, parameters):
     r = {
         'id': r_id,
         'url': parameters.get('url'),
-        'state': 'active' if 'state' not in parameters else parameters.get('state')
+        'state': ('active'
+                  if 'state' not in parameters
+                  else parameters.get('state'))
     }
     if 'user' in parameters:
         r['user'] = parameters.get('user')
@@ -293,8 +296,12 @@ def get_repository_contributors(redis_instance, repository_id):
         raise CollectorException(EXCEP_REPOSITORY_NOT_FOUND)
 
     ret = []
-    br_ids = [x.split(':')[1] for x in redis_instance.get('cb').keys(repository_id + ':*')]
-    [ret.extend(get_contributors_from_branch_id(redis_instance, repository_id, x)) for x in br_ids]
+    br_ids = [x.split(':')[1]
+              for x in redis_instance.get('cb').keys(repository_id + ':*')]
+    [ret.extend(get_contributors_from_branch_id(redis_instance, repository_id,
+                                                x))
+     for x in br_ids]
+
     return set(ret)
 
 
@@ -392,8 +399,8 @@ def del_branches_from_id(redis_instance, repository_id, branch_name):
         us_com = redis_instance.get('cc').smembers(i)
         br_com = filter(lambda x: str(x).startswith(br_id), us_com)
         [commits_to_del.add(
-            str(x).split(':')[0] + ':' + str(x).split(':')[2]
-        ) for x in br_com]
+            str(commit_id).split(':')[0] + ':' + str(commit_id).split(':')[2]
+        ) for commit_id in br_com]
         redis_instance.get('cc').srem(i, *commits_to_del)
 
     return commits_to_del

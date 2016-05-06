@@ -62,7 +62,8 @@ def repository_clone(info):
             if 'Repository not found.' in res[1]:
                 config.print_message(' * [Worker] %s : ERROR - URL' % __pr_id)
             else:
-                config.print_message(' * [Worker] %s : ERROR - Credentials' % __pr_id)
+                config.print_message(' * [Worker] %s : ERROR - Credentials' %
+                                     __pr_id)
 
     # Repository exists
     else:
@@ -79,7 +80,8 @@ def repository_clone(info):
             if 'Repository not found.' in res[1]:
                 config.print_message(' * [Worker] %s : ERROR - URL' % __pr_id)
             else:
-                config.print_message(' * [Worker] %s : ERROR - Credentials' % __pr_id)
+                config.print_message(' * [Worker] %s : ERROR - Credentials' %
+                                     __pr_id)
 
     # Revert current directory
     os.chdir(cur_dir)
@@ -135,7 +137,6 @@ def get_commit_information(pr_id, sha):
     else:
         info_std = ''
 
-
     # Create regular expression to search "number file pattern"
     __p = re.compile(r"\d+ file")
     __last = None
@@ -152,30 +153,38 @@ def get_commit_information(pr_id, sha):
 
     # Files have been changed
     else:
-        __p = m.start()
+        __p = __last.start()
         info_std = info_std[__p:]
         info_std = info_std.split(", ")
         if "files" not in info_std[0]:
-            commit["files_changed"] = int(info_std[0].replace(" file changed", ""))
+            commit["files_changed"] = int(info_std[0].replace(" file changed",
+                                                              ""))
         else:
-            commit["files_changed"] = int(info_std[0].replace(" files changed", ""))
+            commit["files_changed"] = int(info_std[0].replace(" files changed",
+                                                              ""))
         if len(info_std) > 1:
             if "insertion" in info_std[1]:
                 if "insertions" not in info_std[1]:
-                    commit["lines_added"] = int(info_std[1].replace(" insertion(+)", ""))
+                    commit["lines_added"] = int(info_std[1]
+                                                .replace(" insertion(+)", ""))
                 else:
-                    commit["lines_added"] = int(info_std[1].replace(" insertions(+)", ""))
+                    commit["lines_added"] = int(info_std[1]
+                                                .replace(" insertions(+)", ""))
             else:
                 commit["lines_added"] = 0
                 if "deletions" not in info_std[1]:
-                    commit["lines_removed"] = int(info_std[1].replace(" deletion(-)", ""))
+                    commit["lines_removed"] = int(info_std[1]
+                                                  .replace(" deletion(-)", ""))
                 else:
-                    commit["lines_removed"] = int(info_std[1].replace(" deletions(-)", ""))
+                    commit["lines_removed"] = int(info_std[1]
+                                                  .replace(" deletions(-)", ""))
         if len(info_std) > 2:
             if "deletions" not in info_std[2]:
-                commit["lines_removed"] = int(info_std[2].replace(" deletion(-)", ""))
+                commit["lines_removed"] = int(info_std[2]
+                                              .replace(" deletion(-)", ""))
             else:
-                commit["lines_removed"] = int(info_std[2].replace(" deletions(-)", ""))
+                commit["lines_removed"] = int(info_std[2]
+                                              .replace(" deletions(-)", ""))
         else:
             commit["lines_removed"] = 0
 
@@ -198,7 +207,8 @@ def get_commits_from_branch(info, branch_name):
     os.chdir(config.GC_FOLDER + '/' + __pr_id)
 
     # Get List of Commits from specific branch
-    res = commands.getstatusoutput('git log -b ' + __br_id + ' --pretty=oneline')
+    res = commands.getstatusoutput('git log -b ' + __br_id +
+                                   ' --pretty=oneline')
     commits = {}
     if res[0] == 0:
 
