@@ -58,7 +58,7 @@ def repository_clone(info):
         if res[0] == 0:
             config.print_message(' * [Worker] %s : Cloned' % __pr_id)
         else:
-            res_st = 1
+            res_st = -1
             if 'Repository not found.' in res[1]:
                 config.print_message(' * [Worker] %s : ERROR - URL' % __pr_id)
             else:
@@ -74,9 +74,10 @@ def repository_clone(info):
         # Clone (mirror like bare repository)
         res = commands.getstatusoutput('git pull ' + __pr_url)
         if res[0] == 0:
+            res_st = 1
             config.print_message(' * [Worker] %s : Pulled' % __pr_id)
         else:
-            res_st = 1
+            res_st = -1
             if 'Repository not found.' in res[1]:
                 config.print_message(' * [Worker] %s : ERROR - URL' % __pr_id)
             else:

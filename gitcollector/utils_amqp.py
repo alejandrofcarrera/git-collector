@@ -41,6 +41,7 @@ def print_error_amqp():
 class Event(object):
 
     def __init__(self):
+        self.timestamp = long(time.time() * 1000)
         self.fields = dict()
 
     def update(self, event):
@@ -55,9 +56,9 @@ class Event(object):
     def event_data(self):
 
         values = dict()
+        values['timestamp'] = self.timestamp
         values.update({k: list(v) if k is not 'repository' else v
                        for k, v in self.fields.iteritems()})
-        values['timestamp'] = long(time.time() * 1000)
 
         return values
 
@@ -67,7 +68,9 @@ class BasicEvent(Event):
     def __init__(self, name, elements):
         super(BasicEvent, self).__init__()
         self.name = name
-        self.fields[self.name] = set(elements)
+        self.fields[self.name] = (set(elements)
+                                  if not isinstance(elements, str)
+                                  else {elements})
 
     def update(self, event):
 
@@ -154,8 +157,8 @@ class EventManager(object):
     def start(self):
 
         self._lock.acquire(True)
-        for event in self.events:
-            data = self.events[event].event_data()
+        for event in sorted(self.events.values(), key=lambda x: x.timestamp):
+            data = event.event_data()
             data['instance'] = self.instance
             self._send(json.dumps(data), event.__class__.__name__)
 
@@ -176,7 +179,7 @@ class EventManager(object):
         if not isinstance(event, RepositoryUpdatedEvent):
             e = self.events.get(event.name, event)
             e.update(event)
-            self.events[event.__class__.__name__] = e
+            self.events[event.name] = e
 
         else:  # then is a repository update
             identifier = 'update:%s' % event.fields['repository']

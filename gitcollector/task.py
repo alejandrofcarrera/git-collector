@@ -19,10 +19,13 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import settings as config
-import utils_git
 import threading
+
+import settings as config
 import utils_db
+import utils_git
+from gitcollector import utils_amqp
+
 
 __author__ = 'Alejandro F. Carrera'
 
@@ -75,7 +78,10 @@ class CollectorTask(object):
         for i in rep_active:
             rep_info = utils_db.get_repository(self.rd, i, True)
             st = utils_git.repository_clone(rep_info)
-            if st == 0:
+            if st >= 0:
+                if st == 0:
+                    event = utils_amqp.RepositoryCreatedEvent([rep_info['id']])
+                    self.event_manager.add_event(event)
                 br = self.get_branches_from_repository(rep_info)
                 self.del_commits_from_branches(rep_info, br.get('delete'))
                 self.upd_commits_from_branches(rep_info, br.get('update'))
@@ -142,6 +148,12 @@ class CollectorTask(object):
 
         # Get commits and delete links from branches
         for i in branches:
+
+            # Notification for deleted branches
+            event = utils_amqp.RepositoryUpdatedEvent(rep_info['id'],
+                                                      'deletedBranches',
+                                                      i)
+            self.event_manager.add_event(event)
             com_br_del = utils_db.del_branches_from_id(
                 self.rd, rep_info.get('id'), i
             )
@@ -149,6 +161,12 @@ class CollectorTask(object):
 
         # Remove all unique commits
         if len(commits_to_del) > 0:
+
+            # Notification for deleted commits
+            event = utils_amqp.RepositoryUpdatedEvent(rep_info['id'],
+                                                      'deletedCommits',
+                                                      commits_to_del)
+            self.event_manager.add_event(event)
             utils_db.del_commits_from_repository(
                 self.rd, rep_info.get('id'), commits_to_del
             )
@@ -162,6 +180,12 @@ class CollectorTask(object):
 
             # Get old information
             if not self.rd.get('b').exists(br_id):
+
+                # Notification for new branches:
+                event = utils_amqp.RepositoryUpdatedEvent(rep_info['id'],
+                                                          'newBranches',
+                                                          [br_id.split(':')[1]])
+                self.event_manager.add_event(event)
                 br_info_col = set()
             else:
                 br_info_col = set(eval(
@@ -215,8 +239,28 @@ class CollectorTask(object):
                 com_br_new[user_key].update(
                     {br_id + ':' + j: co_info.get('time')})
 
+            if len(com_br_new):
+                contributors = set(com_br_new.keys())
+                new_commiters = contributors.difference(
+                    utils_db.get_contributors(self.rd))
+                # Notification for new commiters
+                event = utils_amqp.CommitterCreatedEvent(new_commiters)
+                self.event_manager.add_event(event)
+
+                # Notification for contributors
+                event = utils_amqp.RepositoryUpdatedEvent(rep_info['id'],
+                                                          'contributors',
+                                                          contributors)
+                self.event_manager.add_event(event)
+
             # Set values at Redis Structure - Users
             if len(new_ids):
+
+                # Notification for new Commits
+                event = utils_amqp.RepositoryUpdatedEvent(rep_info['id'],
+                                                          'newCommits', new_ids)
+                self.event_manager.add_event(event)
+
                 for j in com_br_new:
                     utils_db.inject_user_commits(self.rd, j, com_br_new[j])
 
