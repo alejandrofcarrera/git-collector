@@ -46,6 +46,7 @@ def execute_collector():
                                                  config.GC_PORT),
                                                 config.GC_AMQP_BROKER_HOST,
                                                 config.GC_AMQP_BROKER_PORT,
+                                                config.GC_AMQP_EXCNAME,
                                                 config.GC_AMQP_VIRTUAL_HOST,
                                                 config.GC_AMQP_TIME)
 

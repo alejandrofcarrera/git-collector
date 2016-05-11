@@ -133,7 +133,8 @@ class RepositoryUpdatedEvent(Event):
 
 class EventManager(object):
 
-    def __init__(self, instance, host, port, virtual_host='/', t_window=1):
+    def __init__(self, instance, host, port, exchange_name, virtual_host='/',
+                 t_window=1):
 
         """
         Class that manage events, sending them in intervals of t_window
@@ -148,6 +149,7 @@ class EventManager(object):
 
         self.broker_host = host
         self.broker_port = port
+        self.exchange_name = exchange_name
         self.virtual_host = virtual_host
         self.t_window = float(t_window)
         self.instance = instance
@@ -203,10 +205,14 @@ class EventManager(object):
 
         try:
             channel = connection.channel()
-            routing_key = 'gitcollector.notification.' + event_name
+
+            channel.exchange_declare(exchange=self.exchange_name,
+                                     type='topic')
+
+            routing_key = 'gitcollector.notification.%s' % event_name
             channel.confirm_delivery()
             sent = channel.basic_publish(
-                exchange=config.GC_AMQP_EXCNAME,
+                exchange=self.exchange_name,
                 routing_key=routing_key,
                 body=json.dumps(message, ensure_ascii=False),
                 properties=BasicProperties(
