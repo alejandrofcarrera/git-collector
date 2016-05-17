@@ -162,7 +162,7 @@ class EventManager(object):
         for event in sorted(self.events.values(), key=lambda x: x.timestamp):
             data = event.event_data()
             data['instance'] = self.instance
-            self._send(json.dumps(data), event.__class__.__name__)
+            self._send(data, event.__class__.__name__)
 
         self.events.clear()
         self._lock.release()
