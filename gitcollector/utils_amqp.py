@@ -216,7 +216,7 @@ class EventManager(object):
                 routing_key=routing_key,
                 body=json.dumps(message, ensure_ascii=False),
                 properties=BasicProperties(
-                    content_type='application/psr.sdh.gitcollector+json',
+                    headers={'Content-Type': 'application/psr.sdh.gitcollector+json'},
                     content_encoding='utf-8',
                     delivery_mode=2
                 ),
