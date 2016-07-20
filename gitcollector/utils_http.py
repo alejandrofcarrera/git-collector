@@ -44,7 +44,8 @@ def generate_pwd_error():
 
 def generate_ctype_error():
     return json_response({
-        "Error": "The server does not support the media type transmitted in the request."
+        "Error": "The server does not support the media type transmitted in"
+                 "the request."
     }, 415)
 
 
@@ -66,7 +67,7 @@ def generate_repo_error(msg, status):
 def check_url(url):
     try:
         return validators.url(url)
-    except validators.ValidationFailure as e:
+    except validators.ValidationFailure:
         return False
 
 
@@ -74,9 +75,9 @@ def check_password(req, pwd):
 
     # Check Password is available at Headers
     if config.GC_USE_PASSWORD and 'X-GC-PWD' not in req.headers:
-        raise Exception('Password is not valid')
+        raise StandardError('Password is not valid')
 
     # Check Password is valid
     if config.GC_USE_PASSWORD and 'X-GC-PWD' in req.headers:
         if pwd != req.headers.get('X-GC-PWD'):
-            raise Exception('Password is not valid')
+            raise StandardError('Password is not valid')

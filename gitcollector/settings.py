@@ -61,6 +61,7 @@ GC_DB_COMMITTER_COMMIT = int(os.environ.get("GC_COMMITTER_COMMIT", 5))
 GC_AMQP_BROKER_HOST = os.environ.get("GC_MQ_IP", "127.0.0.1")
 GC_AMQP_BROKER_PORT = int(os.environ.get("GC_MQ_PORT", 5672))
 GC_AMQP_VIRTUAL_HOST = os.environ.get("GC_MQ_VHOST", "/")
+GC_AMQP_TIME = os.environ.get('GC_MQ_TIME', 10)
 GC_AMQP_EXCNAME = os.environ.get("GC_MQ_EXCNAME", "gitcollector")
 
 # Collector Password Auto-generated
