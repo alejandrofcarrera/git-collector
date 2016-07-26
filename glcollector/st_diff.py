@@ -45,6 +45,8 @@ def projects(project_one, project_two):
         "name": "string",
         "public": "string",
         "owner": "string",
+        "avatar_url": "string",
+        "description": "string",
         "http_url_to_repo": "string",
         "default_branch": "string",
         "web_url": "string",
@@ -73,21 +75,24 @@ def groups(group_one, group_two):
 def diff_structure(st_keys, st_one, st_two):
     st_new = {}
     for i in st_one.keys():
-        if st_keys[i] == "string" and str(st_one[i]) != str(st_two[i]):
-            st_new[i] = st_one[i]
-        elif st_keys[i] == "int" and int(st_one[i]) != int(st_two[i]):
-            st_new[i] = st_one[i]
-        elif st_keys[i] == "long" and long(st_one[i]) != long(st_two[i]):
-            st_new[i] = st_one[i]
-        elif st_keys[i] == "array":
-            a_st_one = st_one[i] if isinstance(st_one[i], list) else eval(st_one[i])
-            b_st_one = st_one[i] if isinstance(st_two[i], list) else eval(st_two[i])
-            em_news = list(set(a_st_one).difference(set(b_st_one)))
-            em_deleted = list(set(b_st_one).difference(set(a_st_one)))
-            if len(em_news) > 0 or len(em_deleted) > 0:
-                st_new[i] = a_st_one
-        else:
-            pass
+        if i in st_keys:
+            if i not in st_two:
+                st_new[i] = st_one[i]
+            elif st_keys[i] == "string" and str(st_one[i]) != str(st_two[i]):
+                st_new[i] = st_one[i]
+            elif st_keys[i] == "int" and int(st_one[i]) != int(st_two[i]):
+                st_new[i] = st_one[i]
+            elif st_keys[i] == "long" and long(st_one[i]) != long(st_two[i]):
+                st_new[i] = st_one[i]
+            elif st_keys[i] == "array":
+                a_st_one = st_one[i] if isinstance(st_one[i], list) else eval(st_one[i])
+                b_st_one = st_one[i] if isinstance(st_two[i], list) else eval(st_two[i])
+                em_news = list(set(a_st_one).difference(set(b_st_one)))
+                em_deleted = list(set(b_st_one).difference(set(a_st_one)))
+                if len(em_news) > 0 or len(em_deleted) > 0:
+                    st_new[i] = a_st_one
+            else:
+                pass
     if len(st_new.keys()) > 0:
         return st_new
     else:

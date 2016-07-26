@@ -1,0 +1,192 @@
+"""
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
+  This file is part of the Smart Developer Hub Project:
+    http://www.smartdeveloperhub.org
+  Center for Open Middleware
+        http://www.centeropenmiddleware.com/
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
+  Copyright (C) 2015 Center for Open Middleware.
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
+  Licensed under the Apache License, Version 2.0 (the "License");
+  you may not use this file except in compliance with the License.
+  You may obtain a copy of the License at
+            http://www.apache.org/licenses/LICENSE-2.0
+  Unless required by applicable law or agreed to in writing, software
+  distributed under the License is distributed on an "AS IS" BASIS,
+  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  See the License for the specific language governing permissions and
+  limitations under the License.
+#-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
+"""
+
+import requests
+import json
+import os
+
+try:
+    from urllib import quote_plus
+except ImportError:
+    from urllib.parse import quote_plus
+    basestring = str
+
+__author__ = 'Alejandro F. Carrera'
+
+# Load metadata (code)
+rl_path = os.path.dirname(os.path.realpath(__file__))
+with open(os.path.join(rl_path, "metadata.json")) as data_file:
+    metadata = json.load(data_file)
+
+
+class GlAPI(object):
+    """Gitlab API class"""
+    def __init__(self, host, token="", oauth_token="", ssl=True):
+        """on init we setup the token used for api calls
+        :param host: Gitlab's host
+        :param token: token
+        """
+
+        # Save flag to verify ssl connection
+        self.ssl = ssl
+
+        # Check and Save Token
+        if token != "":
+            self.token = token
+            self.headers = {"PRIVATE-TOKEN": token}
+        elif oauth_token != "":
+            self.oauth_token = oauth_token
+            self.headers = {"Authorization": ('Bearer {%s}', oauth_token)}
+
+        # Check and Save Gitlab's host
+        if not host:
+            raise ValueError("")
+        self.host = host.rstrip('/')
+        if self.host.startswith('http://') or self.host.startswith('https://'):
+            pass
+        else:
+            self.host = 'https://' + self.host
+
+    def execute_login(self, api_call, method, data):
+        """Return JSON Data Request or False
+        :param api_call: GitLab Host + API Method
+        :param method: HTTP Method
+        :param data: additional parameters like pagination
+        :return: returns a dictionary with the information, false if there is an error
+        """
+        if "login" not in data and "email" not in data:
+            raise ValueError('Neither username nor email provided to login')
+        __headers = {"connection": "close"}
+        r = getattr(requests, method)
+        r = r(api_call, params=data, headers=__headers, verify=self.ssl)
+        if r.status_code == 201:
+            self.token = r.json()['private_token']
+            self.headers = __headers
+            self.headers["PRIVATE-TOKEN"] = self.token
+            return True
+        else:
+            msg = r.json()['message']
+            raise Exception(msg)
+
+    # Execute Request
+    def execute_request(self, api_call, method, data):
+        """Return JSON Data Request or False
+        :param api_call: GitLab Host + API Method
+        :param method: HTTP Method
+        :param data: additional parameters like pagination
+        :return: returns a dictionary with the information, false if there is an error
+        """
+        r = getattr(requests, method)
+        r = r(api_call, params=data, headers=self.headers, verify=self.ssl)
+        if r.status_code == 200:
+            return r.json()
+        else:
+            return False
+
+    # Generic Request to API
+    def create_request(self, api_call, method, data):
+        """Return JSON Data Request or False
+        :param api_call: GitLab Host + API Method
+        :param method: HTTP Method
+        :param data: additional parameters like pagination
+        :return: returns a dictionary with the information, false if there is an error
+        """
+        if "page" not in data and "per_page" not in data:
+            if method != "get":
+                raise ValueError("pagination not allowed with method: " + method)
+            __data = data
+            if api_call.endswith("projects"):
+                __data["page"] = 1
+            else:
+                __data["page"] = 0
+            __data["per_page"] = 1000
+            __ret = []
+            __ret_len = -1
+
+            while __ret_len is not 0:
+                __ret_temp = self.execute_request(api_call, method, __data)
+                if __ret_temp is False:
+                    __ret_len = 0
+                elif isinstance(__ret_temp, list):
+                    if cmp(__ret_temp, __ret) == 0:
+                        __ret_len = 0
+                    else:
+                        __ret_len = len(__ret_temp)
+                        __ret += __ret_temp
+                __data["page"] += 1
+            return __ret
+        else:
+            return self.execute_request(api_call, method, data)
+
+    # Execution Method
+    def execute_method(self, name, kwargs):
+        __data = metadata[name]
+
+        # Detect Required Parameters
+        for i in __data.get("url_param").keys():
+            if i not in kwargs.keys():
+                raise ValueError("missing parameter: " + i +
+                                 " (" + __data.get("url_param")[i].get("description") + ")")
+        for i in __data.get("spec_param").keys():
+            if i not in kwargs.keys() and __data.get("spec_param")[i].get("required"):
+                raise ValueError("missing parameter: " + i +
+                                 " (" + __data.get("spec_param")[i].get("description") + ")")
+
+        # Generate URL Gitlab
+        __url = __data.get("string")
+        for i in __data.get("url_param").keys():
+            __url = __url.replace(":" + i, str(kwargs[i]))
+        __url = self.host + "/api/v3/" + __url
+        __url_method = str(__data.get("method")).lower()
+
+        # Options Pagination
+        __url_data = {}
+        if "page" in kwargs:
+            __url_data["page"] = kwargs.get("page")
+        if "per_page" in kwargs:
+            __url_data["per_page"] = kwargs.get("per_page")
+
+        # Generate URL Data (usually used at POST)
+        for i in kwargs.keys():
+            if i in __data.get("spec_param").keys():
+                __url_data[i] = kwargs[i]
+
+        if name == "create_session":
+            return self.execute_login(__url, __url_method, __url_data)
+        else:
+            return self.create_request(__url, __url_method, __url_data)
+
+    # Generic Method
+    def attr_method(self, method_name):
+        def wrapper(**kwargs):
+            try:
+                return self.execute_method(method_name, kwargs)
+            except Exception as e:
+                raise e
+        return wrapper
+
+    def __getattr__(self, item):
+        if item == "login":
+            return self.attr_method("create_session")
+        elif item in metadata.keys():
+            return self.attr_method(item)
+        else:
+            raise NotImplementedError("Method not implemented")

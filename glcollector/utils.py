@@ -20,7 +20,7 @@
 """
 
 import redis
-from glapi import GlAPI
+from glapi.glapi import GlAPI
 
 import user as util_user
 import group as util_group

@@ -26,32 +26,24 @@ __author__ = 'Alejandro F. Carrera'
 
 # Collector Package Configuration
 NAME = "gl-collector"
-VERSION = "1.0.0"
+VERSION = "1.1.6"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
-DELAY = 60 * 60 * 3
-
-# Collector Hook Configuration to get changes from Gitlab
-COLLECTOR_WEBHOOK_IP = os.environ.get("COLL_WEBHOOK_IP", "10.0.2.2")
-
-# Collector Configuration to create Flask API
-COLLECTOR_LISTEN_PROT = os.environ.get("COLL_LISTEN_PROT", "http")
-COLLECTOR_LISTEN_PORT = int(os.environ.get("COLL_LISTEN_PORT", 5000))
-COLLECTOR_LISTEN_IP = os.environ.get("COLL_LISTEN_IP", "0.0.0.0")
+DELAY = int(os.environ.get("COLL_DELAY", 60 * 60 * 3))
 
 # Collector Configuration Folder
 COLLECTOR_GIT_FOLDER = "/tmp/gl-collector/"
 
 # Gitlab Configuration to get data
 GITLAB_PROT = os.environ.get("COLL_GITLAB_PROT", "http")
-GITLAB_IP = os.environ.get("COLL_GITLAB_IP", "127.0.0.1")
-GITLAB_PORT = int(os.environ.get("COLL_GITLAB_PORT", 8000))
+GITLAB_IP = os.environ.get("COLL_GITLAB_IP", "vps164.cesvima.upm.es")
+GITLAB_PORT = int(os.environ.get("COLL_GITLAB_PORT", 80))
 GITLAB_USER = os.environ.get("COLL_GITLAB_USER", "root")
-GITLAB_PASS = os.environ.get("COLL_GITLAB_PASS", "12345678")
+GITLAB_PASS = os.environ.get("COLL_GITLAB_PASS", "123456sdh")
 GITLAB_VER_SSL = bool(os.environ.get("COLL_GITLAB_VERIFY_SSL", False))
 
 # Redis Configuration to set data
-REDIS_IP = os.environ.get("COLL_REDIS_IP", "127.0.0.1")
+REDIS_IP = os.environ.get("COLL_REDIS_IP", "192.168.99.100")
 REDIS_PORT = int(os.environ.get("COLL_REDIS_PORT", 6379))
 REDIS_PASS = os.environ.get("COLL_REDIS_PASS", None)
 
@@ -87,7 +79,7 @@ GITLAB_REPO_FIELDS = [
     "first_commit_at", "contributors", "http_url_to_repo", "web_url",
     "owner", "id", "archived", "public", "description", "default_branch",
     "last_commit_at", "last_activity_at", "name", "created_at", "avatar_url",
-    "tags", "namespace"
+    "tags", "namespace", "avatar_url"
 ]
 
 # Fields about Branch

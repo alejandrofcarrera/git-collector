@@ -25,7 +25,6 @@ import st_clean
 import st_diff
 import commands
 import base64
-import inject
 import shutil
 import os
 
@@ -79,7 +78,6 @@ def save(self, pr_id, pr_info):
 
         # Detect different information from two projects
         __new_project = st_diff.projects(pr_info, pr_rd)
-        __flag = False
 
         if __new_project is not None:
 
@@ -119,8 +117,21 @@ def save_code(self, pr_id, pr_name):
     __mt_mod = list(__mt_diff.union(__mt_int))
     __mt_del = list(set(__branches_rd_info.keys()).difference(set(__branches_gl_info.keys())))
 
+    # Structure for removed commits
+    __mt_del_commits = set()
+
     # Delete information about Branch
+    count = 0
     for i in __mt_del:
+
+        # Number of deleted branches
+        count += 1
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message(
+                "* (%d) [%d/%d] Deleted %s" %(int(pr_id), count, len(__mt_del), i)
+            )
 
         # Get information from redis
         __br_info = __branches_rd_info[i]
@@ -136,10 +147,33 @@ def save_code(self, pr_id, pr_name):
             __us_com = self.rd_instance_us_co.smembers(j)
             for x in __us_com:
                 if str(x).startswith(__br_id):
+                    __mt_del_commits.add(str(x).split(":")[0] + ":" + str(x).split(":")[2])
                     self.rd_instance_us_co.srem(j, x)
 
+    # Remove all unique commits
+    if len(__mt_del_commits) > 0:
+        __rd_branch_co = set()
+        __rd_branch = self.rd_instance_br.keys(__p_id + "*")
+        for i in __rd_branch:
+            __rd_branch_co = __rd_branch_co.union(
+                set(dict(self.rd_instance_br_co.zrange(i, 0, -1)).keys())
+            )
+        for i in __mt_del_commits:
+            if i not in __rd_branch_co:
+                self.rd_instance_co.delete(i)
+            
     # Update information about Branch
+    count = 0
     for i in __mt_mod:
+
+        # Number of reviewed branches
+        count += 1
+
+        # Print alert
+        if config.DEBUGGER:
+            config.print_message(
+                "* (%d) [%d/%d] Reviewed %s" %(int(pr_id), count, len(__mt_mod), i)
+            )
 
         # Clean information
         __br_info = __branches_gl_info[i]
@@ -170,6 +204,14 @@ def save_fs(pr_info):
     __pr_id = str(pr_info.get("id")) + "_" + pr_info.get("name")
     __pr_url = pr_info.get("http_url_to_repo")
 
+    # Insert credentials HTTP/S
+    __replace = "http://"
+    if str(__pr_url).startswith("https://"):
+        __replace = "https://"
+    __pr_url = str(__pr_url).replace(
+        __replace, __replace + config.GITLAB_USER + ":" + config.GITLAB_PASS + "@"
+        )
+
     # Change current directory to folder
     os.chdir(config.COLLECTOR_GIT_FOLDER)
 
@@ -190,7 +232,7 @@ def save_fs(pr_info):
         os.chdir(config.COLLECTOR_GIT_FOLDER + __pr_id)
 
         # Clone (mirror like bare repository)
-        commands.getstatusoutput("git pull")
+        commands.getstatusoutput("git pull " + __pr_url)
 
         # Print alert
         if config.DEBUGGER:
