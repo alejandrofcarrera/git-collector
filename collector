@@ -19,8 +19,12 @@
 #-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=#
 """
 
-import datetime
+from flask import make_response, Flask
+from flask_negotiate import produces
+
+import json
 import time
+import datetime
 import threading
 
 from glcollector import settings as config
@@ -28,10 +32,27 @@ from glcollector import utils
 
 __author__ = 'Alejandro F. Carrera'
 
+app = Flask(__name__)
+app_error = False
+
+# Get collector configuration
+@app.route('/', methods=['GET'])
+@produces('application/json')
+def api():
+    return make_response(json.dumps({
+        "Name": config.LONGNAME,
+        "Version": config.VERSION,
+        "Finished": True,
+        "Found errors": app_error
+    }), 200)
+
+
 def execute_collector():
+
     threading.Timer(config.DELAY, execute_collector).start()
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     config.print_message("* %s (%s) Started - %s" % (config.LONGNAME, config.VERSION, st))
+
     # Create Object Collector
     try:
         __collector = utils.Collector()
@@ -40,12 +61,13 @@ def execute_collector():
         __collector.update_information("projects")
     except Exception as e:
         if e.message == "":
-            config.print_error(e.strerror)
+            config.print_error(e)
         else:
             config.print_error(e.message)
+        app_error = True
     st = datetime.datetime.fromtimestamp(time.time()).strftime('%Y-%m-%d %H:%M:%S')
     config.print_message("* %s (%s) Finished - %s" % (config.LONGNAME, config.VERSION, st))
-
+    app.run(config.COLLECTOR_LISTEN_IP, config.COLLECTOR_LISTEN_PORT)
 # MAIN
 
 if __name__ == '__main__':
