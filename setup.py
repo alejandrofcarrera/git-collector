@@ -40,7 +40,7 @@ setup(
     keywords="inner-source collector gl-enhancer",
     url="https://github.com/SmartDeveloperHub/gitlab-collector",
     packages=find_packages(exclude=['ez_setup', 'examples', 'tests']),
-    install_requires=['redis', 'flask', 'flask_negotiate', 'python-dateutil'],
+    install_requires=['requests', 'redis', 'flask', 'flask_negotiate', 'python-dateutil'],
     package_data={'project': ['glapi/*.json']},
     classifiers=[],
     scripts=['collector']
