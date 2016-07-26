@@ -26,7 +26,7 @@ __author__ = 'Alejandro F. Carrera'
 
 # Collector Package Configuration
 NAME = "gl-collector"
-VERSION = "1.1.7"
+VERSION = "1.1.8"
 DEBUGGER = True
 LONGNAME = "Gitlab Collector"
 DELAY = int(os.environ.get("COLL_DELAY", 60 * 60 * 3))
