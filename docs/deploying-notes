@@ -1,0 +1,80 @@
+Installation
+-------------
+
+- Download Dockerfile from GitHub:
+git clone https://github.com/SmartDeveloperHub/sdh-gl-collector-docker.git
+git checkout develop
+
+- Build Docker image:
+sudo docker build -t docker-git_collector .
+
+- Run Redis container:
+sudo docker run --name gitCollector-redis -P -d redis
+
+- Get Redis port:
+sudo docker ps
+
+- Run GitCollector container:
+sudo docker run -d --name gitCollector --expose=5000 -p 80:5000 -e "GC_RED_IP=<Redis IP>" -e "GC_RED_PORT=<Redis Port>" -e "GC_DELAY=60" docker-git_collector
+
+- Get GitCollector password (If Password enable):
+sudo docker logs gitCollector 2>&1 | grep "Password"
+
+
+API endpoints (NOTE: Use X-GC-PWD for the password)
+---------------------------------------------------
+
+	GET		- /
+	GET		- /api
+
+	GET, POST	- /api/repositories
+	GET		- /api/repositories/<String:r_id>
+	POST		- /api/repositories/<String:r_id>/state
+	GET		- /api/repositories/<String:r_id>/contributors
+
+	GET		- /api/repositories/<String:r_id>/commits
+	GET		- /api/repositories/<String:r_id>/commits/<String:c_id>
+
+	GET		- /api/repositories/<String:r_id>/branches
+	GET		- /api/repositories/<String:r_id>/branches/<String:b_id>
+	GET		- /api/repositories/<String:r_id>/branches/<String:b_id>/commits
+	GET		- /api/repositories/<String:r_id>/branches/<String:b_id>/contributors
+
+	GET		- /api/contributors/
+	GET		- /api/contributors/<String:co_id>
+
+
+POST BODY
+---------
+
+{
+    "url": "<url.git>",
+    "username": "<username>",
+    "state": "active",
+    "password": "<password>"
+}
+
+
+Environment Variables
+---------------------
+
+GC_PASSWORD		: 0 or 1 to enable passsword
+
+GC_DELAY		: Time, in seconds, between git fetching
+GC_LISTEN_IP		: IP for API deploying
+GC_LISTEN_PORT		: Port for API deploying
+
+# Collector Database Configuration
+
+GC_RED_IP		: IP of the Redis instance
+GC_RED_PORT		: Port of the Redis service
+GC_RED_PASS		: Password the Redis if any
+
+# Collector - Redis Database
+
+GC_REPOSITORIES		: Redis Database for repositories
+GC_REPOSITORIES_URL	: Redis Database for repositories urls
+GC_BRANCH		: Redis Database for branches
+GC_COMMIT		: Redis Database for commits
+GC_BRANCH_COMMIT	: Redis Database for relations between branches and commits
+GC_COMMITTER_COMMIT	: Redis Database for commiters
